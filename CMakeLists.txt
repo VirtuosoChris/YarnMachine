@@ -28,3 +28,5 @@ set_property(TARGET YarnMachineLib PROPERTY
   set_property(TARGET YarnTest PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 
+set_property(TARGET YarnTest PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+

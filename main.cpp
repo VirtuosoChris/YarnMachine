@@ -1,15 +1,117 @@
 #include "yarn.h"
+#include "./depends/csv.hpp"
 
 #include <iostream>
 #include <fstream>
 
+#include <chrono>
+
+using namespace csv;
+
+struct LineData
+{
+    std::string id;
+    std::string text;
+    std::string file;
+    std::string node;
+    int lineNumber = 0;
+
+    uint64_t sizeBytes() const
+    {
+        return id.size() + sizeof(id)
+            + text.size() + sizeof(text)
+            + file.size() + sizeof(file)
+            + node.size() + sizeof(node)
+            + sizeof(lineNumber);
+    }
+};
+
+typedef std::string LineID;
+
+struct LineDatabase
+{
+    std::unordered_map<LineID, LineData> lines;
+    long long parsingTime = 0;
+
+    uint64_t lineCount()
+    {
+        return lines.size();
+    }
+
+    uint64_t sizeBytes()
+    {
+        uint64_t rval = 0;
+        for (const auto& [key, value] : lines)
+        {
+            rval += value.sizeBytes();
+        }
+        return rval;
+    }
+
+    LineDatabase()
+    {
+    }
+
+    LineDatabase(const std::string_view& csvFile)
+    {
+        loadLines(csvFile);
+    }
+
+    void loadLines(const std::string_view& csvFile)
+    {
+        auto start = std::chrono::high_resolution_clock::now();
+
+        csv::CSVReader reader(csvFile);
+
+        for (const CSVRow& row : reader)
+        {
+            int lineNumber = 0;
+
+            if (row["lineNumber"].is_int())
+            {
+                lineNumber = row["lineNumber"].get<int>();
+            }
+            else
+            {
+                assert(0);
+            }
+
+            std::string id = row["id"].get();
+
+            lines[id] = 
+            {
+                id,
+                row["text"].get(),
+                row["file"].get(),
+                row["node"].get(),
+                lineNumber
+            };
+        }
+
+        auto stop = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+
+        parsingTime += duration.count();
+    }
+};
+
+
 int main(void)
 {
-    std::clog << "kdfjkdjf" << std::endl;
+    LineDatabase db;
+
+    const std::string testLinesCSV = "test/test-Lines.csv";
+
+    db.loadLines(testLinesCSV);
+
+    std::cout << "Loading lines from : " << testLinesCSV << std::endl;
+    std::cout << "Line database total lines : " << db.lineCount() << std::endl;
+    std::cout << "Line database size (bytes) : " << db.sizeBytes() << std::endl;
+    std::cout << "Time spent in parsing (ms) : " << db.parsingTime << std::endl;
 
     YarnMachine m;
 
-    std::ifstream file("./Output.yarnc", std::ios::binary | std::ios::in);
+    std::ifstream file("./test/test.yarnc", std::ios::binary | std::ios::in);
 
     bool fileOpen = file.is_open();
 

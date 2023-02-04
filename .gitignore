@@ -2,3 +2,4 @@ Build/*
 install/*
 *.vcxproj
 Build/CMakeCache.txt
+depends/rapidcsv.h
