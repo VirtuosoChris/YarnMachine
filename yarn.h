@@ -244,7 +244,7 @@ struct YarnMachine
         break;
         case Yarn::Instruction_OpCode_SHOW_OPTIONS:
         {
-            if ()
+            /*if ()
             {
 
             }
@@ -252,7 +252,7 @@ struct YarnMachine
             {
                 programState.runningState = ProgramState::AWAITING_INPUT;
                 callbacks.onShowOptions(currentOptionsList);
-            }
+            }*/
         }
         break;
         case Yarn::Instruction_OpCode_PUSH_STRING:
@@ -494,5 +494,6 @@ struct YarnMachine
     {
         const Yarn::Node& nodeRef = program.nodes().at(node);
         programState = ProgramState(nodeRef);
+        return true; ///\todo true
     }
 };

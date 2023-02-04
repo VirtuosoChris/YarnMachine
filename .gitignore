@@ -1,3 +1,4 @@
 Build/*
+install/*
 *.vcxproj
 Build/CMakeCache.txt

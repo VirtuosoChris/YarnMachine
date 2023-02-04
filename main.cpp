@@ -13,9 +13,11 @@ int main(void)
 
     bool fileOpen = file.is_open();
 
+    std::clog << "file open? : " << fileOpen << std::endl;
+
     m.loadProgram(file);
 
-    m.printNodes();
+    //m.printNodes();
 
     auto it = m.program.nodes().begin();
     if (( it = m.program.nodes().find("Start")) != m.program.nodes().end())

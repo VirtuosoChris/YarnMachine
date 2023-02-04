@@ -14,6 +14,17 @@ generated/yarn_spinner.pb.h
 target_include_directories(YarnMachineLib PUBLIC ./install/include)
 target_include_directories(YarnMachineLib PUBLIC ./generated)
 
+target_link_directories(YarnMachineLib PUBLIC ./install/lib)
+
+target_link_libraries(YarnMachineLib PUBLIC libprotobuf)
+
 add_executable(YarnTest main.cpp)
 
 target_link_libraries(YarnTest YarnMachineLib)
+
+set_property(TARGET YarnMachineLib PROPERTY
+  MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+  
+  set_property(TARGET YarnTest PROPERTY
+  MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+
