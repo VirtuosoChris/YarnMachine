@@ -144,7 +144,20 @@ struct YarnMachine
             throw YarnException("Current node is nullptr in processInstruction()");
         }
 
-        switch (instruction.opcode())
+        bool jumpInstruction = false;
+        auto op = instruction.opcode();
+
+        switch (op)
+        {
+        case Yarn::Instruction_OpCode_JUMP_TO:
+        case Yarn::Instruction_OpCode_JUMP:
+            jumpInstruction = true;
+            break;
+        default:
+            break;
+        }
+
+        switch (op)
         {
         case Yarn::Instruction_OpCode_JUMP_TO:
         {
@@ -244,6 +257,10 @@ struct YarnMachine
         break;
         case Yarn::Instruction_OpCode_SHOW_OPTIONS:
         {
+            assert(currentOptionsList.size());
+
+            callbacks.onShowOptions(currentOptionsList);
+
             /*if ()
             {
 
@@ -397,6 +414,11 @@ struct YarnMachine
             break;
         }
         };
+
+        if (!jumpInstruction && programState.runningState != ProgramState::STOPPED)
+        {
+            programState.advance();
+        }
     }
 
     struct ProgramState
@@ -418,10 +440,12 @@ struct YarnMachine
 
         void setInstruction(std::int32_t instruction)
         {
+            /*
             if (!currentNode || (currentNode->instructions_size() > (instruction)))
             {
                 throw YarnException("Invalid parameters for setInstruction()");
             }
+            */
 
             instructionPointer = instruction;
         }

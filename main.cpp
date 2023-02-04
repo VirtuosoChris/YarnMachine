@@ -6,6 +6,10 @@
 
 #include <chrono>
 
+#ifdef _WIN32
+#include <conio.h>
+#endif
+
 const int YARN_TAGS_COLUMN_INDEX = 3;
 
 using namespace csv;
@@ -137,12 +141,50 @@ int main(void)
     db.loadLines(testLinesCSV);
     db.loadMetadata(testMetaCSV);
 
+#if 0
     std::cout << "Loading lines from : " << testLinesCSV << std::endl;
     std::cout << "Line database total lines : " << db.lineCount() << std::endl;
     std::cout << "Line database size (bytes) : " << db.sizeBytes() << std::endl;
     std::cout << "Time spent in parsing (ms) : " << db.parsingTime << std::endl;
+#endif
 
     YarnMachine m;
+
+    m.callbacks.onLine = [&db](const std::string& line)
+    {
+        std::cout << db.lines[line].text << std::endl;
+#ifdef _WIN32
+        getch();
+#endif
+    };
+
+    m.callbacks.onShowOptions = [&db, &m](const YarnMachine::OptionsList& opts)
+    {
+        for (int i = 0; i < opts.size(); i++)
+        {
+            ///\todo substitutions
+            const std::string& lineID = opts[i].line.id;
+            std::cout << '\t' << (i+1) << ") " << db.lines[lineID].text << std::endl;
+
+            ///\todo input string validation
+        }
+
+        int lineIndex = 0;
+
+        std::cin >> lineIndex;
+
+        lineIndex -= 1; // zero offset on cin
+
+        const YarnMachine::Option& line = opts[lineIndex];
+
+        Yarn::Operand op;
+        op.set_string_value(line.destination);
+
+        m.variableStack.push(op);
+
+        ///\todo this doesn't belong here!
+        m.currentOptionsList.clear();
+    };
 
     std::ifstream file("./test/test.yarnc", std::ios::binary | std::ios::in);
 
@@ -167,8 +209,7 @@ int main(void)
 
     while (m.programState.runningState == YarnMachine::ProgramState::RUNNING)
     {
-        const Yarn::Instruction& inst = m.programState.advance();
-        m.processInstruction(inst);
+        m.processInstruction(m.programState.currentInstruction());
     }
 }
 
