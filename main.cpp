@@ -6,6 +6,8 @@
 
 #include <chrono>
 
+const int YARN_TAGS_COLUMN_INDEX = 3;
+
 using namespace csv;
 
 struct LineData
@@ -27,11 +29,14 @@ struct LineData
 };
 
 typedef std::string LineID;
+typedef std::string LineTag;
 
 struct LineDatabase
 {
     std::unordered_map<LineID, LineData> lines;
     long long parsingTime = 0;
+
+    std::unordered_map<LineID, std::unordered_set<LineTag> > tags;
 
     uint64_t lineCount()
     {
@@ -55,6 +60,32 @@ struct LineDatabase
     LineDatabase(const std::string_view& csvFile)
     {
         loadLines(csvFile);
+    }
+
+    void loadMetadata(const std::string_view& csvFile)
+    {
+        auto start = std::chrono::high_resolution_clock::now();
+
+        csv::CSVFormat format;
+        format.variable_columns(true);
+        format.variable_columns(VariableColumnPolicy::KEEP);
+
+        csv::CSVReader reader(csvFile, format);
+
+        for (const CSVRow& row : reader)
+        {
+            std::string id = row["id"].get();
+
+            for (int i = YARN_TAGS_COLUMN_INDEX; i < row.size(); i++)
+            {
+                tags[id].insert(row[i].get());
+            }
+        }
+
+        auto stop = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+
+        parsingTime += duration.count();
     }
 
     void loadLines(const std::string_view& csvFile)
@@ -101,8 +132,10 @@ int main(void)
     LineDatabase db;
 
     const std::string testLinesCSV = "test/test-Lines.csv";
+    const std::string testMetaCSV = "test/test-Metadata.csv";
 
     db.loadLines(testLinesCSV);
+    db.loadMetadata(testMetaCSV);
 
     std::cout << "Loading lines from : " << testLinesCSV << std::endl;
     std::cout << "Line database total lines : " << db.lineCount() << std::endl;

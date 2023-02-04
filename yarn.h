@@ -45,16 +45,16 @@ struct YarnMachine
 
     typedef std::function<void(void)> YarnCallback;
 
-#define CALLBACK(name) YarnCallback name = NIL_CALLBACK;
+#define YARN_CALLBACK(name) YarnCallback name = NIL_CALLBACK;
 
     struct YarnCallbacks
     {
-        CALLBACK(onProgramStopped);
-        CALLBACK(onChangeNode);
+        YARN_CALLBACK(onProgramStopped);
+        YARN_CALLBACK(onChangeNode);
 
-        std::function<void(const std::string&)> onLine;
-        std::function<void(const std::string&)> onCommand;
-        std::function<void(const OptionsList&)> onShowOptions;
+        std::function<void(const std::string&)> onLine = [](const std::string&) {};
+        std::function<void(const std::string&)> onCommand = [](const std::string&) {};
+        std::function<void(const OptionsList&)> onShowOptions = [](const OptionsList&) {};
     };
 
     YarnCallbacks callbacks;

@@ -1,0 +1,12 @@
+id,text,file,node,lineNumber
+line:C:\Users\chris\GitHub\YarnMachine\test\test.yarn-Start-0,Companion: Hi there! What do you feel like doing today?,C:\Users\chris\GitHub\YarnMachine\test\test.yarn,Start,3
+line:C:\Users\chris\GitHub\YarnMachine\test\test.yarn-Start-1,Player: I want to go swimming.,C:\Users\chris\GitHub\YarnMachine\test\test.yarn,Start,5
+line:C:\Users\chris\GitHub\YarnMachine\test\test.yarn-Start-2,"Companion: Okay, let's go swimming.",C:\Users\chris\GitHub\YarnMachine\test\test.yarn,Start,6
+line:C:\Users\chris\GitHub\YarnMachine\test\test.yarn-Start-3,Companion: Where do you want to swim?,C:\Users\chris\GitHub\YarnMachine\test\test.yarn,Start,7
+line:C:\Users\chris\GitHub\YarnMachine\test\test.yarn-Start-4,Player: The lake!,C:\Users\chris\GitHub\YarnMachine\test\test.yarn,Start,8
+line:C:\Users\chris\GitHub\YarnMachine\test\test.yarn-Start-5,Companion: Nice! It's a great day for it.,C:\Users\chris\GitHub\YarnMachine\test\test.yarn,Start,9
+line:C:\Users\chris\GitHub\YarnMachine\test\test.yarn-Start-6,Player: The swimming pool!,C:\Users\chris\GitHub\YarnMachine\test\test.yarn,Start,10
+line:C:\Users\chris\GitHub\YarnMachine\test\test.yarn-Start-7,"Companion: Oh, awesome! I heard they installed a new slide.",C:\Users\chris\GitHub\YarnMachine\test\test.yarn,Start,11
+line:C:\Users\chris\GitHub\YarnMachine\test\test.yarn-Start-8,Player: I'd prefer to go hiking.,C:\Users\chris\GitHub\YarnMachine\test\test.yarn,Start,12
+line:C:\Users\chris\GitHub\YarnMachine\test\test.yarn-Start-9,"Companion: Cool, we'll go hiking then.",C:\Users\chris\GitHub\YarnMachine\test\test.yarn,Start,13
+line:C:\Users\chris\GitHub\YarnMachine\test\test.yarn-Start-10,Player: Sounds good!,C:\Users\chris\GitHub\YarnMachine\test\test.yarn,Start,15

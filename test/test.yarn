@@ -4,7 +4,7 @@ Companion: Hi there! What do you feel like doing today?
 
 -> Player: I want to go swimming.
     Companion: Okay, let's go swimming.
-    Companion: Where do you want to swim?
+    Companion: Where do you want to swim? #keyline
     -> Player: The lake!
         Companion: Nice! It's a great day for it.
     -> Player: The swimming pool!
