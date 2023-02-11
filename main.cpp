@@ -135,8 +135,9 @@ int main(void)
 {
     LineDatabase db;
 
-    const std::string testLinesCSV = "test/test-Lines.csv";
-    const std::string testMetaCSV = "test/test-Metadata.csv";
+    const std::string testLinesCSV = "test/test5-Lines.csv";
+    const std::string testMetaCSV = "test/test5-Metadata.csv";
+    const std::string yarncFile = "./test/test5.yarnc";
 
     db.loadLines(testLinesCSV);
     db.loadMetadata(testMetaCSV);
@@ -150,11 +151,97 @@ int main(void)
 
     YarnMachine m;
 
-    m.callbacks.onLine = [&db](const std::string& line)
+    m.callbacks.onLine = [&db](const YarnMachine::Line& line)
     {
-        std::cout << db.lines[line].text << std::endl;
+        //
 #ifdef _WIN32
-        getch();
+        //getch();
+#endif
+
+        std::stringstream sstr;
+
+        int subsRemaining = line.substitutions.size();
+
+        if (!subsRemaining)
+        {
+            std::cout << db.lines[line.id].text << std::endl;
+        }
+        else
+        {
+            ///\todo major audit of this.
+
+            std::string_view sv(db.lines[line.id].text);
+
+            for (int i = 0; i < sv.size(); i++)
+            {
+                if (sv[i] == '{')
+                {
+                    int arg = -1;
+                    i++;
+                    std::istringstream is(sv.data() + i);
+                    is >> arg;
+
+                    while (isdigit(sv[i]))i++;
+
+                    assert(sv[i] == '}');
+
+                    const auto& sub = line.substitutions[subsRemaining - arg - 1];
+
+                    if (sub.has_bool_value())
+                    {
+                        sstr << sub.bool_value();
+                    }
+                    else if (sub.has_float_value())
+                    {
+                        sstr << sub.float_value();
+                    }
+                    else if (sub.has_string_value())
+                    {
+                        sstr << sub.string_value();
+                    }
+                    else
+                    {
+                        assert(0 && "bad variable");
+                    }
+                }
+                else
+                {
+                    sstr << sv[i];
+                }
+            }
+
+            std::cout << sstr.str() << std::endl;
+        }
+#if 0
+        std::size_t pos = 0;
+        pos = sv.find("{", pos);
+
+        sstr.read((char*)sv.data(), pos);
+
+        while (subsRemaining > 0)
+        {
+
+            std::istringstream(sv);
+
+            const auto& sub = line.substitutions[subsRemaining - 1];
+
+            if (sub.has_bool_value())
+            {
+                sstr << sub.bool_value();
+            }
+            else if (sub.has_float_value())
+            {
+                sstr << sub.float_value();
+            }
+            else if (sub.has_string_value())
+            {
+                sstr << sub.string_value();
+            }
+            else
+            {
+                assert(0 && "bad variable");
+            }
+        }
 #endif
     };
 
@@ -186,7 +273,7 @@ int main(void)
         m.currentOptionsList.clear();
     };
 
-    std::ifstream file("./test/test.yarnc", std::ios::binary | std::ios::in);
+    std::ifstream file(yarncFile, std::ios::binary | std::ios::in);
 
     bool fileOpen = file.is_open();
 
