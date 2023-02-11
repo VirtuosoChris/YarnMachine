@@ -1,0 +1,4 @@
+id,text,file,node,lineNumber
+line:C:\Users\chris\GitHub\YarnMachine\test\test3.yarn-Start-0,The number of sides in a square is {0}.,C:\Users\chris\GitHub\YarnMachine\test\test3.yarn,Start,9
+line:C:\Users\chris\GitHub\YarnMachine\test\test3.yarn-Start-1,The number of sides in a triangle is {0}.,C:\Users\chris\GitHub\YarnMachine\test\test3.yarn,Start,10
+line:C:\Users\chris\GitHub\YarnMachine\test\test3.yarn-Start-2,"I repeat, the number of sides in a square is  {0} and the number of sides in a triangle is {1}",C:\Users\chris\GitHub\YarnMachine\test\test3.yarn,Start,12

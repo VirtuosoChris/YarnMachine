@@ -1,0 +1,35 @@
+title: Start
+---
+Companion: Hi there! What do you feel like doing today?
+
+-> Player: I want to go swimming.
+    Companion: Okay, let's go swimming.
+    <<jump Swimming>>
+-> Player: I'd prefer to go hiking.
+    Companion: Cool, we'll go hiking then.
+    <<jump Hiking>>
+===
+title: Swimming
+---
+Companion: Where do you want to swim?
+-> Player: The lake!
+    Companion: Nice! It's a great day for it.
+-> Player: The swimming pool!
+    Companion: Oh, awesome! I heard they installed a new slide.
+
+<<jump Done>>
+===
+title: Hiking
+---
+Companion: Have you got your hiking boots ready?
+-> Player: Yes.
+    Companion: Great, let's go!
+-> Player: No.
+    Companion: We can swing by your place and pick them up!
+
+<<jump Done>>
+===
+title: Done
+---
+Player: Sounds good!
+===

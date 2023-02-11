@@ -9,8 +9,22 @@ Companion: Hi there! What do you feel like doing today?
         Companion: Nice! It's a great day for it.
     -> Player: The swimming pool!
         Companion: Oh, awesome! I heard they installed a new slide.
+    Player: Sounds good!
+    <<jump SwimmingScene>>
 -> Player: I'd prefer to go hiking.
     Companion: Cool, we'll go hiking then.
-    
-Player: Sounds good!
+    Player: Sounds good!
+    <<jump HikingScene>>
+
+===
+title: HikingScene
+position: -162,-172
+Player: HIKING HIKING HIKING! IT'S SO FUN
+---
+
+===
+title: SwimmingScene
+position: 94,-171
+---
+
 ===

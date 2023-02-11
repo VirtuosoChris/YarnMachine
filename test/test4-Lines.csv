@@ -1,0 +1,6 @@
+id,text,file,node,lineNumber
+line:C:\Users\chris\GitHub\YarnMachine\test\test4.yarn-Start-0,Player: I'd like to buy a pie!,C:\Users\chris\GitHub\YarnMachine\test\test4.yarn,Start,7
+line:C:\Users\chris\GitHub\YarnMachine\test\test4.yarn-Start-1,"Baker: Well, you can't afford one!",C:\Users\chris\GitHub\YarnMachine\test\test4.yarn,Start,10
+line:C:\Users\chris\GitHub\YarnMachine\test\test4.yarn-Start-2,Baker: You can almost afford one!,C:\Users\chris\GitHub\YarnMachine\test\test4.yarn,Start,12
+line:C:\Users\chris\GitHub\YarnMachine\test\test4.yarn-Start-3,Baker: Here you go!,C:\Users\chris\GitHub\YarnMachine\test\test4.yarn,Start,14
+line:C:\Users\chris\GitHub\YarnMachine\test\test4.yarn-Start-4,After your change you have {0},C:\Users\chris\GitHub\YarnMachine\test\test4.yarn,Start,17

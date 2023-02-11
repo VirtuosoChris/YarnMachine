@@ -1,0 +1,17 @@
+id,text,file,node,lineNumber
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Start-0,Companion: Hi there! What do you feel like doing today?,C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Start,3
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Start-1,Player: I want to go swimming.,C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Start,5
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Start-2,"Companion: Okay, let's go swimming.",C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Start,6
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Start-3,Player: I'd prefer to go hiking.,C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Start,8
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Start-4,"Companion: Cool, we'll go hiking then.",C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Start,9
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Swimming-5,Companion: Where do you want to swim?,C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Swimming,14
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Swimming-6,Player: The lake!,C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Swimming,15
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Swimming-7,Companion: Nice! It's a great day for it.,C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Swimming,16
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Swimming-8,Player: The swimming pool!,C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Swimming,17
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Swimming-9,"Companion: Oh, awesome! I heard they installed a new slide.",C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Swimming,18
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Hiking-10,Companion: Have you got your hiking boots ready?,C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Hiking,24
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Hiking-11,Player: Yes.,C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Hiking,25
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Hiking-12,"Companion: Great, let's go!",C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Hiking,26
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Hiking-13,Player: No.,C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Hiking,27
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Hiking-14,Companion: We can swing by your place and pick them up!,C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Hiking,28
+line:C:\Users\chris\GitHub\YarnMachine\test\test2.yarn-Done-15,Player: Sounds good!,C:\Users\chris\GitHub\YarnMachine\test\test2.yarn,Done,34

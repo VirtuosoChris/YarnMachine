@@ -1,0 +1,18 @@
+
+title: Start
+position: 254,275
+---
+<<declare $gold_amount = 5>>
+
+Player: I'd like to buy a pie!
+
+<<if $gold_amount < 10>>
+    Baker: Well, you can't afford one!
+<<elseif $gold_amount < 15>>
+    Baker: You can almost afford one!
+<<else>>
+    Baker: Here you go!
+<<endif>>
+
+After your change you have {$gold_amount}
+===

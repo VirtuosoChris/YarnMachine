@@ -1,0 +1,18 @@
+title: Start
+position: 254,275
+---
+<<declare $numberOfSidesInATriangle = 0>>
+<<declare $numberOfSidesInASquare = 0>>
+<<set $numberOfSidesInATriangle to 3>>
+
+<<set $numberOfSidesInASquare to $numberOfSidesInATriangle + 1>>
+The number of sides in a square is {$numberOfSidesInASquare}.
+The number of sides in a triangle is {$numberOfSidesInATriangle}.
+
+I repeat, the number of sides in a square is  {$numberOfSidesInASquare} and the number of sides in a triangle is {$numberOfSidesInATriangle}
+===
+title: Node1
+position: 437,342
+---
+
+===

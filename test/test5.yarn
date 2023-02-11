@@ -1,0 +1,58 @@
+
+title: Start
+position: 254,275
+---
+<<declare $gold_amount = 5>>
+<<declare $rich = false>>
+<<declare $poor = false>>
+
+<<if $gold_amount == 5>>
+    I have exactly 5 gold pieces!
+<<endif>>
+
+<<if $gold_amount > 100>>
+    Wow I have a lot of gold!
+<<endif>>
+
+<<if $gold_amount < 5>>
+    Wow I'm broke!
+<<endif>>
+
+<<if $gold_amount <= 5>>
+    Wow I'm ALMOST broke
+<<endif>>
+
+<<if $gold_amount >= 100>>
+    Wow I'm barely rich
+<<endif>>
+
+<<set $gold_amount = $gold_amount - 1>>
+
+<<set $gold_amount = ($gold_amount * 2) / 2>>
+
+<<set $gold_amount = $gold_amount % 1>>
+
+After your change you have {$gold_amount}
+
+<<if ($gold_amount < 100) && ($gold_amount > 10)>>
+    I have a NORMAL amount of cash
+<<endif>>
+
+<<if not ($gold_amount > 100)>>
+    I am not rich.
+    <<set $rich to false>>
+<<endif>>
+
+
+<<if  ($gold_amount > 90) or ($gold_amount < 10)>>
+    I am either rich or poor.
+<<endif>>
+
+<<if  ($gold_amount < 10)>>
+    <<set $poor to true>>
+<<endif>>
+
+<<set $rich = $rich xor $poor>>
+
+Done!
+===
