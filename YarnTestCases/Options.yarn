@@ -1,0 +1,15 @@
+title: A
+---
+-> Go to B
+    <<jump B>>
+-> Go to C
+    <<jump C>>
+===
+title: B
+---
+Node B
+===
+title: C
+---
+Node C
+===

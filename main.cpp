@@ -135,9 +135,13 @@ int main(void)
 {
     LineDatabase db;
 
-    const std::string testLinesCSV = "test/test5-Lines.csv";
-    const std::string testMetaCSV = "test/test5-Metadata.csv";
-    const std::string yarncFile = "./test/test5.yarnc";
+    const std::string TestFolder = "test";
+    const std::string TestFilePrefix = "/test5";
+    const std::string testFile = TestFolder + TestFilePrefix;
+
+    const std::string testLinesCSV = testFile + "-Lines.csv";
+    const std::string testMetaCSV = testFile + "-Metadata.csv";
+    const std::string yarncFile = testFile + ".yarnc";
 
     db.loadLines(testLinesCSV);
     db.loadMetadata(testMetaCSV);

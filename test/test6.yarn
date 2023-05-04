@@ -1,0 +1,19 @@
+
+title: Start
+position: 254,275
+---
+
+
+<<declare $A = 5>>
+<<declare $B = 3>>
+A is {$A}
+B is {$B}
+A - B is {$A - $B}
+B - A is {$B - $A}
+A / B is {$A / $B}
+B / A is {$B / $A}
+A % B is {$A % $B}
+B % A is {$B % $A}
+
+Done!
+===

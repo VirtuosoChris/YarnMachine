@@ -6,6 +6,8 @@ position: 254,275
 <<declare $rich = false>>
 <<declare $poor = false>>
 
+Gold amount is : {$gold_amount}
+
 <<if $gold_amount == 5>>
     I have exactly 5 gold pieces!
 <<endif>>

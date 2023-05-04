@@ -1,0 +1,7 @@
+id,text,file,node,lineNumber
+line:C:\Users\chris\GitHub\YarnMachine\YarnTestCases\Basic.yarn-Start-0,whoa what here's some text,C:\Users\chris\GitHub\YarnMachine\YarnTestCases\Basic.yarn,Start,3
+line:C:\Users\chris\GitHub\YarnMachine\YarnTestCases\Basic.yarn-Start-1,this should appear :),C:\Users\chris\GitHub\YarnMachine\YarnTestCases\Basic.yarn,Start,7
+line:C:\Users\chris\GitHub\YarnMachine\YarnTestCases\Basic.yarn-Start-2,NESTED IF BLOCK WHAAAT,C:\Users\chris\GitHub\YarnMachine\YarnTestCases\Basic.yarn,Start,9
+line:C:\Users\chris\GitHub\YarnMachine\YarnTestCases\Basic.yarn-Start-3,oh noooo it didn't work :(,C:\Users\chris\GitHub\YarnMachine\YarnTestCases\Basic.yarn,Start,13
+line:C:\Users\chris\GitHub\YarnMachine\YarnTestCases\Basic.yarn-Start-4,haha nice now 'set' works even when deeply nested,C:\Users\chris\GitHub\YarnMachine\YarnTestCases\Basic.yarn,Start,17
+line:C:\Users\chris\GitHub\YarnMachine\YarnTestCases\Basic.yarn-Start-5,aaargh :(,C:\Users\chris\GitHub\YarnMachine\YarnTestCases\Basic.yarn,Start,19

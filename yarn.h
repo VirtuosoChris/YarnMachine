@@ -189,8 +189,8 @@ struct YarnMachine
             {
                 //std::cout << "run_line with operand ct : " << instruction.operands_size() << std::endl;
                 const std::string& lineID = get_string_operand(instruction, 0);
-                std::cout << get_string_operand(instruction, 0) << std::endl;
-                std::cout << get_float_operand(instruction, 1) << std::endl;
+                //std::cout << get_string_operand(instruction, 0) << std::endl;
+                //std::cout << get_float_operand(instruction, 1) << std::endl;
 
                 int substitutions = get_float_operand(instruction, 1);
 
@@ -351,6 +351,9 @@ struct YarnMachine
                 const Yarn::Operand& top = variableStack.top();
 
                 if (top.has_string_value() || (top.has_bool_value() && (top.bool_value() != false)) || (top.has_float_value() && (top.float_value() != 0.f)))
+                {
+                }
+                else
                 {
                     const std::string& labelName = get_string_operand(instruction, 0);
 
@@ -545,9 +548,9 @@ struct YarnMachine
         {
             Yarn::Operand rval;
 
-            auto a = yarn.variableStack.top().float_value();
-            yarn.variableStack.pop();
             auto b = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+            auto a = yarn.variableStack.top().float_value();
             yarn.variableStack.pop();
 
             rval.set_float_value(a - b);
@@ -573,9 +576,9 @@ struct YarnMachine
         {
             Yarn::Operand rval;
 
-            auto a = yarn.variableStack.top().float_value();
-            yarn.variableStack.pop();
             auto b = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+            auto a = yarn.variableStack.top().float_value();
             yarn.variableStack.pop();
 
             rval.set_float_value(a / b);
@@ -587,9 +590,9 @@ struct YarnMachine
         {
             Yarn::Operand rval;
 
-            auto a = yarn.variableStack.top().float_value();
-            yarn.variableStack.pop();
             auto b = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+            auto a = yarn.variableStack.top().float_value();
             yarn.variableStack.pop();
 
             rval.set_float_value(std::fmod(a, b));
@@ -601,9 +604,9 @@ struct YarnMachine
         {
             Yarn::Operand rval;
 
-            auto a = yarn.variableStack.top().float_value();
-            yarn.variableStack.pop();
             auto b = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+            auto a = yarn.variableStack.top().float_value();
             yarn.variableStack.pop();
 
             rval.set_bool_value(a < b);
@@ -630,9 +633,9 @@ struct YarnMachine
         {
             Yarn::Operand rval;
 
-            auto a = yarn.variableStack.top().float_value();
-            yarn.variableStack.pop();
             auto b = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+            auto a = yarn.variableStack.top().float_value();
             yarn.variableStack.pop();
 
             ///\todo float equality
@@ -645,9 +648,9 @@ struct YarnMachine
         {
             Yarn::Operand rval;
 
-            auto a = yarn.variableStack.top().float_value();
-            yarn.variableStack.pop();
             auto b = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+            auto a = yarn.variableStack.top().float_value();
             yarn.variableStack.pop();
 
             ///\todo float equality
@@ -660,9 +663,9 @@ struct YarnMachine
         {
             Yarn::Operand rval;
 
-            auto a = yarn.variableStack.top().float_value();
-            yarn.variableStack.pop();
             auto b = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+            auto a = yarn.variableStack.top().float_value();
             yarn.variableStack.pop();
 
             ///\todo float equality
