@@ -1,0 +1,18 @@
+title: Start
+---
+
+Hello!
+
+<<wait 2>>
+<<setsprite ShipName happy>>
+<<fade_out 1.5>>
+
+<<set $money to 30>>
+// Leave the dialogue if we don't have enough money
+<<if $money < 50>>
+    Shopkeeper: You can't afford my pies!
+    <<stop>>
+<<endif>>
+
+next line after the stop!
+===

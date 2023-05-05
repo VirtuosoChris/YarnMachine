@@ -136,7 +136,7 @@ int main(void)
     LineDatabase db;
 
     const std::string TestFolder = "test";
-    const std::string TestFilePrefix = "/test9";
+    const std::string TestFilePrefix = "/testc";
     const std::string testFile = TestFolder + TestFilePrefix;
 
     const std::string testLinesCSV = testFile + "-Lines.csv";
@@ -146,7 +146,7 @@ int main(void)
     db.loadLines(testLinesCSV);
     db.loadMetadata(testMetaCSV);
 
-#if 0
+#if _DEBUG
     std::cout << "Loading lines from : " << testLinesCSV << std::endl;
     std::cout << "Line database total lines : " << db.lineCount() << std::endl;
     std::cout << "Line database size (bytes) : " << db.sizeBytes() << std::endl;
@@ -155,11 +155,32 @@ int main(void)
 
     YarnMachine m;
 
+    m.callbacks.onCommand = [](const std::string& command)
+    {
+        std::cout << "command : " << command << std::endl;
+    };
+
     m.callbacks.onLine = [&db](const YarnMachine::Line& line)
     {
         //
 #ifdef _WIN32
         //getch();
+#endif
+
+#if _DEBUG
+
+        std::cout << "Running line " << line.id;
+
+        if (db.tags[line.id].size())
+        {
+            std::cout << " With tags : \n";
+
+            for (auto& tag : db.tags[line.id])
+            {
+                std::cout << '\t' << tag << '\n';
+            }
+        }
+        std::cout << std::endl;
 #endif
 
         std::stringstream sstr;
@@ -216,38 +237,24 @@ int main(void)
 
             std::cout << sstr.str() << std::endl;
         }
-#if 0
-        std::size_t pos = 0;
-        pos = sv.find("{", pos);
+    };
 
-        sstr.read((char*)sv.data(), pos);
-
-        while (subsRemaining > 0)
+#if _DEBUG
+    m.callbacks.onChangeNode = [&m]()
+    {
+        std::cout << "Entering node : " << m.currentNode()->name();
+        if (m.currentNode()->tags_size())
         {
+            std::cout << " with tags:\n";
 
-            std::istringstream(sv);
-
-            const auto& sub = line.substitutions[subsRemaining - 1];
-
-            if (sub.has_bool_value())
+            for (auto& x : m.currentNode()->tags())
             {
-                sstr << sub.bool_value();
-            }
-            else if (sub.has_float_value())
-            {
-                sstr << sub.float_value();
-            }
-            else if (sub.has_string_value())
-            {
-                sstr << sub.string_value();
-            }
-            else
-            {
-                assert(0 && "bad variable");
+                std::cout << '\t' << x << '\n';
             }
         }
-#endif
+        std::cout << std::endl;
     };
+#endif
 
     m.callbacks.onShowOptions = [&db, &m](const YarnMachine::OptionsList& opts)
     {

@@ -48,6 +48,7 @@ ceil(6.6) is {ceil(6.6)}
 
 ===
 title: Start2
+tags: #camera2 background:conductor_cabin
 ---
 Sub node
 <<jump Start>>

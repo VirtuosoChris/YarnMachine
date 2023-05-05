@@ -432,8 +432,6 @@ struct YarnMachine
             break;
             case Yarn::Instruction_OpCode_RUN_NODE:
             {
-                callbacks.onChangeNode();
-
                 if (variableStack.size() && variableStack.top().has_string_value())
                 {
                     const std::string& nodeName = variableStack.top().string_value();
@@ -1043,11 +1041,16 @@ struct YarnMachine
         GOOGLE_PROTOBUF_VERIFY_VERSION;
     }
 
+    inline const Yarn::Node* currentNode()const
+    {
+        return programState.currentNode;
+    }
+
     bool loadNode(const std::string& node)
     {
-        if (this->programState.currentNode)
+        if (currentNode())
         {
-            this->nodeMeta[this->programState.currentNode].nodeExitedCount++;
+            this->nodeMeta[currentNode()].nodeExitedCount++;
         }
 
         const Yarn::Node& nodeRef = program.nodes().at(node);
@@ -1055,6 +1058,8 @@ struct YarnMachine
         this->nodeMeta[&nodeRef].nodeEnteredCount++;
 
         programState = ProgramState(nodeRef);
+
+        callbacks.onChangeNode();
 
         return true; ///\todo true
     }
