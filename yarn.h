@@ -13,7 +13,15 @@
 //#define CALLBACK_ARGS NULL
 #define NIL_CALLBACK [](){}
 
-struct YarnMachine
+struct YarnVMSettings
+{
+    std::mt19937::result_type randomSeed = std::mt19937::default_seed;
+    bool enableExceptions = true;
+
+    ///\todo serialize the settings too
+};
+
+struct YarnMachine : public YarnVMSettings
 {
     /*
     struct StaticContext
@@ -45,7 +53,10 @@ struct YarnMachine
     std::unordered_map<std::string, Yarn::Operand> variableStorage;
     std::unordered_map<std::string, YarnFunction> functions;
 
-    std::default_random_engine generator;
+    // https://stackoverflow.com/questions/27727012/c-stdmt19937-and-rng-state-save-load-portability
+    // we want to be able to serialize / deserialize the rng state and continue deterministically
+    // this means we can't use std::default_random_engine for the generator since this is implementation defined.
+    std::mt19937 generator;
 
     /// write all variables, types, and values to an ostream as key:value pairs, one variable per line
     std::ostream& logVariables(std::ostream& str)
@@ -76,20 +87,6 @@ struct YarnMachine
 
         return str;
     }
-
-    struct NodeMetaData
-    {
-        unsigned int nodeEnteredCount = 0;
-        unsigned int nodeExitedCount = 0;
-
-        bool operator<(const NodeMetaData& rhs) const
-        {
-            if (nodeEnteredCount < rhs.nodeEnteredCount) { return true; }
-            return nodeExitedCount < rhs.nodeExitedCount;
-        }
-    };
-
-    std::unordered_map<const Yarn::Node*, NodeMetaData> nodeMeta;
 
     Yarn::Program program;
 
@@ -575,12 +572,18 @@ struct YarnMachine
 
     unsigned int visitedCount(const std::string& node)
     {
-        ///\todo not found
-        const Yarn::Node& nodeRef = program.nodes().at(node);
+        const std::string& nodeTrackerVariable = "$Yarn.Internal.Visiting." + node;
 
-        unsigned int visitedCount = nodeMeta[&nodeRef].nodeExitedCount;
+        auto it = this->variableStorage.find(nodeTrackerVariable);
 
-        return visitedCount;
+        if (it == variableStorage.end())
+        {
+            return 0;
+        }
+
+        assert(it->second.has_float_value());
+
+        return it->second.float_value();
     }
 
     void populateFuncs()
@@ -1053,7 +1056,10 @@ struct YarnMachine
 
     }
 
-    YarnMachine(std::istream& is)
+    YarnMachine(std::istream& is, const YarnVMSettings& setts = {})
+        :
+        YarnVMSettings(setts),
+        generator(setts.randomSeed)
     {
         populateFuncs();
 
@@ -1065,7 +1071,10 @@ struct YarnMachine
         }
     }
 
-    YarnMachine()
+    YarnMachine(const YarnVMSettings& setts = {})
+        :
+        YarnVMSettings(setts),
+        generator(setts.randomSeed)
     {
         populateFuncs();
 
@@ -1079,14 +1088,7 @@ struct YarnMachine
 
     bool loadNode(const std::string& node)
     {
-        if (currentNode())
-        {
-            this->nodeMeta[currentNode()].nodeExitedCount++;
-        }
-
         const Yarn::Node& nodeRef = program.nodes().at(node);
-
-        this->nodeMeta[&nodeRef].nodeEnteredCount++;
 
         programState = ProgramState(nodeRef);
 

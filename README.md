@@ -36,7 +36,6 @@ Additional Notes, differences from "real" Yarn Spinner:
 - This logically includes all markup parsing, eg. as described here:
 https://docs.yarnspinner.dev/getting-started/writing-in-yarn/markup
 - character attribute, select, plurals, and ordinals as described on that same page feel more like a language feature / syntactic sugar but they aren't compiled to anything special in the .yarnc and are treated like any other markup.  This can be seen in how they don't seem to be supported in the current Try Yarnspinner sandbox or the VS code plugin.  I plan to add a "helper" / convenience function for processing these specific markups and add them to the "demo" dialog player.
-- Tracking headers as described here: https://docs.yarnspinner.dev/getting-started/writing-in-yarn/tags-metadata are ignored and node visited counts are always computed.
 - Built in operators and functions have been tested and implemented and should all work.
 - Commands and functions are implemented as std::function callbacks stored in a lookup table
 - The sample command binding functionality is supplied via VirtuosoConsole's QuakeStyleConsole.h 

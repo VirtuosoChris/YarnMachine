@@ -136,7 +136,7 @@ int main(void)
     LineDatabase db;
 
     const std::string TestFolder = "test";
-    const std::string TestFilePrefix = "/testc";
+    const std::string TestFilePrefix = "/test9";
     const std::string testFile = TestFolder + TestFilePrefix;
 
     const std::string testLinesCSV = testFile + "-Lines.csv";
@@ -154,6 +154,8 @@ int main(void)
 #endif
 
     YarnMachine m;
+
+    //std::cout << m.generator << std::endl;
 
     m.callbacks.onCommand = [](const std::string& command)
     {
@@ -319,5 +321,7 @@ int main(void)
     {
         m.processInstruction(m.programState.currentInstruction());
     }
+
+    m.logVariables(std::cout);
 }
 
