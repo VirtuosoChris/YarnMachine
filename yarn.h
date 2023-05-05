@@ -13,6 +13,8 @@
 //#define CALLBACK_ARGS NULL
 #define NIL_CALLBACK [](){}
 
+#define YARN_EXCEPTION(x) if (enableExceptions) { throw YarnException( x ); }
+
 struct YarnVMSettings
 {
     std::mt19937::result_type randomSeed = std::mt19937::default_seed;
@@ -121,7 +123,7 @@ struct YarnMachine : public YarnVMSettings
     {
         if (selection >= currentOptionsList.size())
         {
-            throw YarnException("Invalid option selected");
+            YARN_EXCEPTION("Invalid option selected");
         }
 
         selectOption(currentOptionsList[selection]);
@@ -132,14 +134,14 @@ struct YarnMachine : public YarnVMSettings
     {
         if (instruction.operands_size() <= index)
         {
-            throw YarnException("get_string_operand() : Operand out of bounds");
+            YARN_EXCEPTION("get_string_operand() : Operand out of bounds");
         }
 
         const Yarn::Operand& op = instruction.operands(index);
 
         if (!op.has_string_value())
         {
-            throw YarnException("get_string_operand() : operand doesn't have a string value");
+            YARN_EXCEPTION("get_string_operand() : operand doesn't have a string value");
         }
 
         return op.string_value();
@@ -149,14 +151,14 @@ struct YarnMachine : public YarnVMSettings
     {
         if (instruction.operands_size() <= index)
         {
-            throw YarnException("get_bool_operand() : Operand out of bounds");
+            YARN_EXCEPTION("get_bool_operand() : Operand out of bounds");
         }
 
         const Yarn::Operand& op = instruction.operands(index);
 
         if (!op.has_bool_value())
         {
-            throw YarnException("get_bool_operand() : operand doesn't have a bool value");
+            YARN_EXCEPTION("get_bool_operand() : operand doesn't have a bool value");
         }
 
         return op.bool_value();
@@ -166,14 +168,14 @@ struct YarnMachine : public YarnVMSettings
     {
         if (instruction.operands_size() <= index)
         {
-            throw YarnException("get_float_operand() : Operand out of bounds");
+            YARN_EXCEPTION("get_float_operand() : Operand out of bounds");
         }
 
         const Yarn::Operand& op = instruction.operands(index);
 
         if (!op.has_float_value())
         {
-            throw YarnException("get_float_operand() : operand doesn't have a float value");
+            YARN_EXCEPTION("get_float_operand() : operand doesn't have a float value");
         }
 
         return op.float_value();
@@ -184,7 +186,7 @@ struct YarnMachine : public YarnVMSettings
     {
         if (!programState.currentNode)
         {
-            throw YarnException("Current node is nullptr in processInstruction()");
+            YARN_EXCEPTION("Current node is nullptr in processInstruction()");
         }
 
         //bool jumpInstruction = false;
@@ -199,7 +201,7 @@ struct YarnMachine : public YarnVMSettings
                 // -- hope this syntax is right for this lib!
                 if (programState.currentNode->labels().find(jumpLabel) == programState.currentNode->labels().end())
                 {
-                    throw YarnException("JUMP_TO : Jump label doesn't exist in current node");
+                    YARN_EXCEPTION("JUMP_TO : Jump label doesn't exist in current node");
                 }
 
                 std::int32_t translatedLabel = programState.currentNode->labels().at(jumpLabel);
@@ -215,7 +217,7 @@ struct YarnMachine : public YarnVMSettings
 
                 if ((variableStack.size() == 0) || !stackTop.has_string_value())
                 {
-                    throw YarnException("Stack top doesn't have a string value in JUMP instruction");
+                    YARN_EXCEPTION("Stack top doesn't have a string value in JUMP instruction");
                 }
 
                 const std::string& jumpLoc = stackTop.string_value();
@@ -274,7 +276,7 @@ struct YarnMachine : public YarnVMSettings
 
                 if (nOperands < 2)
                 {
-                    throw YarnException("Insufficient arguments to ADD_OPTION");
+                    YARN_EXCEPTION("Insufficient arguments to ADD_OPTION");
                 }
 
                 if (nOperands > 2)
@@ -291,7 +293,7 @@ struct YarnMachine : public YarnVMSettings
 
                     if ((!top.has_bool_value()) || (top.has_float_value() && (top.float_value() == 0.f)))
                     {
-                        throw YarnException("ADD_OPTION: condition on top of stack not convertible to a bool value");
+                        YARN_EXCEPTION("ADD_OPTION: condition on top of stack not convertible to a bool value");
                     }
 
                     enabled = top.bool_value();
@@ -330,14 +332,14 @@ struct YarnMachine : public YarnVMSettings
             {
                 if (!instruction.operands_size() >= 1)
                 {
-                    throw YarnException("Missing operand for PUSH_STRING instruction");
+                    YARN_EXCEPTION("Missing operand for PUSH_STRING instruction");
                 }
 
                 const Yarn::Operand& op = instruction.operands(0);
 
                 if (!op.has_string_value())
                 {
-                    throw YarnException("Passed non-string operand to PUSH_STRING instruction");
+                    YARN_EXCEPTION("Passed non-string operand to PUSH_STRING instruction");
                 }
 
                 variableStack.push(op);
@@ -347,14 +349,14 @@ struct YarnMachine : public YarnVMSettings
             {
                 if (!instruction.operands_size() >= 1)
                 {
-                    throw YarnException("Missing operand for PUSH_FLOAT instruction");
+                    YARN_EXCEPTION("Missing operand for PUSH_FLOAT instruction");
                 }
 
                 const Yarn::Operand& op = instruction.operands(0);
 
                 if (!op.has_float_value())
                 {
-                    throw YarnException("Passed non-float operand to PUSH_FLOAT instruction");
+                    YARN_EXCEPTION("Passed non-float operand to PUSH_FLOAT instruction");
                 }
 
                 variableStack.push(op);
@@ -364,14 +366,14 @@ struct YarnMachine : public YarnVMSettings
             {
                 if (!instruction.operands_size() >= 1)
                 {
-                    throw YarnException("Missing operand for PUSH_BOOL instruction");
+                    YARN_EXCEPTION("Missing operand for PUSH_BOOL instruction");
                 }
 
                 const Yarn::Operand& op = instruction.operands(0);
 
                 if (!op.has_bool_value())
                 {
-                    throw YarnException("Passed non-bool operand to PUSH_BOOL instruction");
+                    YARN_EXCEPTION("Passed non-bool operand to PUSH_BOOL instruction");
                 }
 
                 variableStack.push(op);
@@ -410,7 +412,7 @@ struct YarnMachine : public YarnVMSettings
             {
                 if (!variableStack.size())
                 {
-                    throw YarnException("POP instruction called with 0 stack size");
+                    YARN_EXCEPTION("POP instruction called with 0 stack size");
                 }
                 variableStack.pop();
             }
@@ -443,7 +445,7 @@ struct YarnMachine : public YarnVMSettings
 
                 if (!variableStack.size())
                 {
-                    throw YarnException("STORE_VARIABLE instruction called with empty stack size");
+                    YARN_EXCEPTION("STORE_VARIABLE instruction called with empty stack size");
                 }
 
                 variableStorage[varname] = variableStack.top();
@@ -472,19 +474,19 @@ struct YarnMachine : public YarnVMSettings
                 }
                 else
                 {
-                    throw YarnException("RUN_NODE instruction expected string variable on top of stack");
+                    YARN_EXCEPTION("RUN_NODE instruction expected string variable on top of stack");
                 }
 
             }
             break;
             default:
             {
-                throw YarnException("Unknown instruction opcode");
+                YARN_EXCEPTION("Unknown instruction opcode");
                 break;
             }
         };
 
-         programState.advance();
+         programState.advance(*this);
     }
 
     struct ProgramState
@@ -516,11 +518,13 @@ struct YarnMachine : public YarnVMSettings
             instructionPointer = instruction;
         }
 
-        const Yarn::Instruction& advance()
+        const Yarn::Instruction& advance(const YarnVMSettings& setts)
         {
+            const bool& enableExceptions = setts.enableExceptions;
+
             if (runningState != ProgramState::RUNNING)
             {
-                throw YarnException("advance() called for next instruction when program is stopped");
+                YARN_EXCEPTION("advance() called for next instruction when program is stopped");
             }
 
             if (currentNode)
@@ -531,12 +535,12 @@ struct YarnMachine : public YarnVMSettings
                 }
                 else
                 {
-                    throw YarnException("nextInstruction() called when current node has no more instructions");
+                    YARN_EXCEPTION("nextInstruction() called when current node has no more instructions");
                 }
             }
             else
             {
-                throw YarnException("Current Node is nullptr in nextInstruction()");
+                YARN_EXCEPTION("Current Node is nullptr in nextInstruction()");
             }
 
             return currentInstruction();
@@ -1067,7 +1071,7 @@ struct YarnMachine : public YarnVMSettings
 
         if (!loadProgram(is))
         {
-            throw YarnException("Unable to load Yarn Program from stream");
+            YARN_EXCEPTION("Unable to load Yarn Program from stream");
         }
     }
 
