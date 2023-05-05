@@ -167,7 +167,7 @@ int main(void)
         //getch();
 #endif
 
-#if _DEBUG
+#if 1
 
         std::cout << "Running line " << line.id;
 
@@ -239,7 +239,7 @@ int main(void)
         }
     };
 
-#if _DEBUG
+#if 1
     m.callbacks.onChangeNode = [&m]()
     {
         std::cout << "Entering node : " << m.currentNode()->name();
@@ -250,6 +250,16 @@ int main(void)
             for (auto& x : m.currentNode()->tags())
             {
                 std::cout << '\t' << x << '\n';
+            }
+        }
+
+        if (m.currentNode()->headers_size())
+        {
+            std::cout << ", with headers\n";
+
+            for (auto& x : m.currentNode()->headers())
+            {
+                std::cout << '\t' << x.key() << ' ' << x.value() << '\n';
             }
         }
         std::cout << std::endl;
