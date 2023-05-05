@@ -40,11 +40,42 @@ struct YarnMachine
     typedef std::function<Yarn::Operand(YarnMachine& yarn, int parameterCount)> YarnFunction; ///\todo arguments
     typedef std::vector<Option> OptionsList;
     OptionsList currentOptionsList;
+
     std::stack <Yarn::Operand> variableStack;
     std::unordered_map<std::string, Yarn::Operand> variableStorage;
     std::unordered_map<std::string, YarnFunction> functions;
 
     std::default_random_engine generator;
+
+    /// write all variables, types, and values to an ostream as key:value pairs, one variable per line
+    std::ostream& logVariables(std::ostream& str)
+    {
+        for (auto it = variableStorage.begin(); it != variableStorage.end(); it++)
+        {
+
+            str << "name:" << it->first << "\ttype:";
+
+            if (it->second.has_bool_value())
+            {
+                str << "bool\tvalue:" << it->second.bool_value() << '\n';
+            }
+            else if (it->second.has_float_value())
+            {
+                str << "float\tvalue:" << it->second.float_value() << '\n';
+            }
+            else if (it->second.has_string_value())
+            {
+                str << "string\tvalue:" << it->second.string_value() << '\n';
+            }
+            else
+            {
+                // this should never happen
+                str << "UNDEFINED\tvalue:UNDEFINED\n";
+            }
+        }
+
+        return str;
+    }
 
     struct NodeMetaData
     {
