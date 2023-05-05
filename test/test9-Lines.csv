@@ -1,0 +1,21 @@
+id,text,file,node,lineNumber
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-0,You rolled a six!,C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,9
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-1,"Aww, You rolled less than a six!",C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,11
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-2,Gambler: My lucky number is {0}!,C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,15
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-3,"Gambler2: Well, *My* lucky number is {0}!",C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,18
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-4,A random number is : {0},C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,23
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-5,And the integer part of that is {0},C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,26
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-6,And the decimal part of that is {0},C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,27
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-7,inc(3.0) is {0},C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,29
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-8,dec(3.0) is {0},C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,30
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-9,inc(3.1) is {0},C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,33
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-10,dec(3.1) is {0},C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,34
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-11,Another random number is : {0},C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,36
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-12,Start node visited? : {0} {1},C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,38
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-13,Two thirds is : {0},C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,40
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-14,Which rounded to two places is {0},C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,41
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-15,round(3.6) is {0},C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,43
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-16,round(3.3) is {0},C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,44
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-17,floor(6.6) is {0},C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,46
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start-18,ceil(6.6) is {0},C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start,47
+line:C:\Users\chris\GitHub\YarnMachine\test\test9.yarn-Start2-19,Sub node,C:\Users\chris\GitHub\YarnMachine\test\test9.yarn,Start2,52

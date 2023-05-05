@@ -1,0 +1,7 @@
+title: Start
+position: 333,323
+---
+Hi!
+// attribute parsing is done in the dialog runner, and isn't baked into the bytecode compiler!
+Oh, [wave]hello[/wave] there!
+===

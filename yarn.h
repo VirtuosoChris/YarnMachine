@@ -3,6 +3,7 @@
 #include <functional>
 #include <stack>
 #include <iostream>
+#include <random>
 
 #include <yarn_spinner.pb.h>
 
@@ -42,6 +43,23 @@ struct YarnMachine
     std::stack <Yarn::Operand> variableStack;
     std::unordered_map<std::string, Yarn::Operand> variableStorage;
     std::unordered_map<std::string, YarnFunction> functions;
+
+    std::default_random_engine generator;
+
+    struct NodeMetaData
+    {
+        unsigned int nodeEnteredCount = 0;
+        unsigned int nodeExitedCount = 0;
+
+        bool operator<(const NodeMetaData& rhs) const
+        {
+            if (nodeEnteredCount < rhs.nodeEnteredCount) { return true; }
+            return nodeExitedCount < rhs.nodeExitedCount;
+        }
+    };
+
+    std::unordered_map<const Yarn::Node*, NodeMetaData> nodeMeta;
+
     Yarn::Program program;
 
     typedef std::function<void(void)> YarnCallback;
@@ -63,10 +81,6 @@ struct YarnMachine
     void selectOption(const Option& option)
     {
         programState.runningState = ProgramState::RUNNING;
-
-        // --- TODO NYI --- 
-        // 
-        // push some shit onto the stack
 
         std::int32_t translatedLabel = programState.currentNode->labels().at(option.destination);
 
@@ -272,6 +286,7 @@ struct YarnMachine
 
                 callbacks.onShowOptions(currentOptionsList);
 
+                ///\todo
                 /*if ()
                 {
 
@@ -374,8 +389,6 @@ struct YarnMachine
             break;
             case Yarn::Instruction_OpCode_CALL_FUNC:
             {
-                // ------------------- TODO NYI WTF ------------------------ //
-
                 int a = instruction.operands_size();
 
                 const std::string& varname = get_string_operand(instruction, 0);
@@ -528,6 +541,19 @@ struct YarnMachine
         return parsed;
     }
 
+#define YARN_FUNC(x) functions[ x ] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+
+
+    unsigned int visitedCount(const std::string& node)
+    {
+        ///\todo not found
+        const Yarn::Node& nodeRef = program.nodes().at(node);
+
+        unsigned int visitedCount = nodeMeta[&nodeRef].nodeExitedCount;
+
+        return visitedCount;
+    }
+
     void populateFuncs()
     {
         functions["Number.Add"] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
@@ -638,7 +664,6 @@ struct YarnMachine
             auto a = yarn.variableStack.top().float_value();
             yarn.variableStack.pop();
 
-            ///\todo float equality
             rval.set_bool_value(a > b);
 
             return rval;
@@ -653,7 +678,6 @@ struct YarnMachine
             auto a = yarn.variableStack.top().float_value();
             yarn.variableStack.pop();
 
-            ///\todo float equality
             rval.set_bool_value(a >= b);
 
             return rval;
@@ -668,7 +692,6 @@ struct YarnMachine
             auto a = yarn.variableStack.top().float_value();
             yarn.variableStack.pop();
 
-            ///\todo float equality
             rval.set_bool_value(a <= b);
 
             return rval;
@@ -706,9 +729,9 @@ struct YarnMachine
         {
             Yarn::Operand rval;
 
-            auto a = yarn.variableStack.top().bool_value();
-            yarn.variableStack.pop();
             auto b = yarn.variableStack.top().bool_value();
+            yarn.variableStack.pop();
+            auto a = yarn.variableStack.top().bool_value();
             yarn.variableStack.pop();
 
             rval.set_bool_value(a && b);
@@ -727,6 +750,278 @@ struct YarnMachine
 
             return rval;
         };
+
+        /*
+        visited(string node_name)
+        visited returns a boolean value of true if the node with the title of node_name has been entered and exited at least once before, otherwise returns false.
+        Will return false if node_name doesn't match a node in project.
+        */
+        YARN_FUNC("visited")
+        {
+            Yarn::Operand rval;
+
+            assert(parameters == 1);
+
+            auto node = yarn.variableStack.top().string_value();
+            yarn.variableStack.pop();
+
+            unsigned int visitedCount = yarn.visitedCount(node);
+
+            rval.set_bool_value(visitedCount > 0);
+
+            return rval;
+        };
+
+        /*
+        visited_count(string node_name)
+        visted_count returns a number value of the number of times the node with the title of node_name has been entered and exited, otherwise returns 0.
+        Will return 0 if node_name doesn't match a node in project.
+        */
+        YARN_FUNC("visited_count")
+        {
+            assert(parameters == 1);
+
+            Yarn::Operand rval;
+
+            auto node = yarn.variableStack.top().string_value();
+            yarn.variableStack.pop();
+
+            unsigned int visitedCount = yarn.visitedCount(node);
+
+            rval.set_float_value(visitedCount);
+
+            return rval;
+        };
+
+        /*
+        random()
+        random returns a random number between 0 and 1 each time you call it.
+        */
+        YARN_FUNC("random")
+        {
+            assert(parameters == 0);
+
+            Yarn::Operand rval;
+
+            std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
+
+            rval.set_float_value(distribution(yarn.generator));
+
+            return rval;
+        };
+
+        /*
+        random_range(number a, number b)
+        random_range returns a random integer between a and b, inclusive.
+        */
+        YARN_FUNC("random_range")
+        {
+            assert(parameters == 2);
+
+            Yarn::Operand rval;
+
+            auto b = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+
+            auto a = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+
+            std::uniform_int_distribution<> distribution(a, b);
+
+            assert(a <= b);
+
+            rval.set_float_value(distribution(yarn.generator));
+
+            return rval;
+        };
+
+        /*
+        dice(number sides)
+        dice returns a random integer between 1 and sides, inclusive.
+        For example, dice(6) returns a number between 1 and 6, just like rolling a six-sided die.
+        */
+        YARN_FUNC("dice")
+        {
+            assert(parameters == 1);
+
+            Yarn::Operand rval;
+
+            auto sides = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+
+            std::uniform_int_distribution<> distribution(1, sides);
+
+            assert(sides > 0);
+
+            rval.set_float_value(distribution(yarn.generator));
+
+            return rval;
+        };
+
+        /*
+        round(number n)
+        round rounds n to the nearest integer.
+        */
+        YARN_FUNC("round")
+        {
+            assert(parameters == 1);
+
+            Yarn::Operand rval;
+
+            auto b = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+
+            rval.set_float_value(std::round(b));
+
+            return rval;
+        };
+
+        /*
+        round_places(number n, number places)
+        round_places rounds n to the nearest number with places decimal points.
+        */
+        YARN_FUNC("round_places")
+        {
+            assert(parameters == 2);
+
+            Yarn::Operand rval;
+
+            auto places = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+
+            auto n = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+
+            int scale = 1;
+            for (int i = 0; i < places; i++)
+            {
+                scale *= 10;
+            }
+
+            auto downscale = 1. / scale;
+
+            auto tmp = std::round(n * scale);
+
+            auto tmp2 = tmp * downscale;
+
+            rval.set_float_value(tmp2);
+
+            return rval;
+        };
+
+        /*
+        floor(number n)
+        floor rounds n down to the nearest integer, towards negative infinity.
+        */
+        YARN_FUNC("floor")
+        {
+            assert(parameters == 1);
+
+            Yarn::Operand rval;
+
+            auto b = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+
+            rval.set_float_value(std::floor(b));
+
+            return rval;
+        };
+
+        /*
+        ceil(number n)
+        ceil rounds n up to the nearest integer, towards positive infinity
+        */
+        YARN_FUNC("ceil")
+        {
+            assert(parameters == 1);
+
+            Yarn::Operand rval;
+
+            auto b = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+
+            rval.set_float_value(std::ceil(b));
+
+            return rval;
+        };
+
+        /*
+        inc(number n)
+        inc rounds n up to the nearest integer. If n is already an integer, inc returns n+1.
+        */
+        YARN_FUNC("inc")
+        {
+            assert(parameters == 1);
+
+            Yarn::Operand rval;
+
+            auto b = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+
+            auto ceilb = std::ceil(b);
+
+            rval.set_float_value(ceilb == b ? ceilb + 1. : ceilb);
+
+            return rval;
+        };
+
+        /*
+        dec(number n)
+        inc rounds n down to the nearest integer. If n is already an integer, inc returns n-1.
+        */
+        YARN_FUNC("dec")
+        {
+            assert(parameters == 1);
+
+            Yarn::Operand rval;
+
+            auto b = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+
+            auto ceilb = std::floor(b);
+
+            rval.set_float_value(ceilb == b ? ceilb - 1. : ceilb);
+
+            return rval;
+        };
+
+        /*
+        decimal(number n)
+        decimal returns the decimal portion of n. This will always be a number between 0 and 1. For example, decimal(4.51) will return 0.51.
+        */
+        YARN_FUNC("decimal")
+        {
+            assert(parameters == 1);
+
+            Yarn::Operand rval;
+
+            auto b = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+
+            float tmp = 0.f;
+            rval.set_float_value(std::modf(b, &tmp));
+
+            return rval;
+        };
+
+        /*
+        int(number n)
+        int rounds n down to the nearest integer, towards zero
+        */
+        YARN_FUNC("int")
+        {
+            assert(parameters == 1);
+
+            Yarn::Operand rval;
+
+            auto b = yarn.variableStack.top().float_value();
+            yarn.variableStack.pop();
+
+            rval.set_float_value(std::trunc(b));
+
+            return rval;
+        };
+
     }
 
     YarnMachine(std::istream& is)
@@ -750,8 +1045,17 @@ struct YarnMachine
 
     bool loadNode(const std::string& node)
     {
+        if (this->programState.currentNode)
+        {
+            this->nodeMeta[this->programState.currentNode].nodeExitedCount++;
+        }
+
         const Yarn::Node& nodeRef = program.nodes().at(node);
+
+        this->nodeMeta[&nodeRef].nodeEnteredCount++;
+
         programState = ProgramState(nodeRef);
+
         return true; ///\todo true
     }
 };

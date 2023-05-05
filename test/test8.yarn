@@ -1,0 +1,16 @@
+title: Start
+---
+<<set $gender to "m">>
+
+<<set $pie_count to 2>>
+
+<<set $race_position to 2>>
+
+I think [select value={$gender} m="he" f="she" nb="they" /] will be there!
+
+PieMaker: Hey, look! [plural value={$pie_count} one="A pie" other="Some pies" /]!
+
+PieMaker: I just baked [plural value={$pie_count} one="a pie" other="% pies" /]!
+
+Runner: The race is over! I came in [ordinal value={$race_position} one="%st" two="%nd" few="%rd" other="%th" /] place!
+===

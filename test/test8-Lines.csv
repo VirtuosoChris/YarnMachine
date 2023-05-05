@@ -1,0 +1,5 @@
+id,text,file,node,lineNumber
+line:C:\Users\chris\GitHub\YarnMachine\test\test8.yarn-Start-0,Hi!,C:\Users\chris\GitHub\YarnMachine\test\test8.yarn,Start,4
+line:C:\Users\chris\GitHub\YarnMachine\test\test8.yarn-Start-1,"I think [select value={0} m=""he"" f=""she"" nb=""they"" /] will be there!",C:\Users\chris\GitHub\YarnMachine\test\test8.yarn,Start,7
+line:C:\Users\chris\GitHub\YarnMachine\test\test8.yarn-Start-2,"I think [select value={0} m=""he"" f=""she"" nb=""they"" /] will be there!",C:\Users\chris\GitHub\YarnMachine\test\test8.yarn,Start,10
+line:C:\Users\chris\GitHub\YarnMachine\test\test8.yarn-Start-3,"I think [select value={0} m=""he"" f=""she"" nb=""they"" /] will be there!",C:\Users\chris\GitHub\YarnMachine\test\test8.yarn,Start,13

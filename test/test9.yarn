@@ -1,0 +1,54 @@
+title: Start
+---
+<<if !visited("Start2")>>
+<<jump Start2>>
+<<endif>>
+
+// Inside an if statement:
+<<if dice(6) == 6>>
+    You rolled a six!
+<<else>>
+    Aww, You rolled less than a six!
+<<endif>>
+
+// Inside a line:
+Gambler: My lucky number is {random_range(1,10)}!
+
+// Inside a line:
+Gambler2: Well, *My* lucky number is {random_range(1,10)}!
+
+<<declare $rndnum to 0.0>>
+<<set $rndnum = random()>>
+
+A random number is : {$rndnum}
+
+
+And the integer part of that is {int($rndnum)}
+And the decimal part of that is {decimal($rndnum)}
+
+inc(3.0) is {inc(3.0)}
+dec(3.0) is {dec(3.0)}
+
+
+inc(3.1) is {inc(3.1)}
+dec(3.1) is {dec(3.1)}
+
+Another random number is : {random()}
+
+Start node visited? : {visited("Start")} {visited_count("Start")}
+
+Two thirds is : {2/3}
+Which rounded to two places is {round_places(2/3, 2)}
+
+round(3.6) is {round(3.6)}
+round(3.3) is {round(3.3)}
+
+floor(6.6) is {floor(6.6)}
+ceil(6.6) is {ceil(6.6)}
+
+===
+title: Start2
+---
+Sub node
+<<jump Start>>
+===

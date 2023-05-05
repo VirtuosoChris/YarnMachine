@@ -136,7 +136,7 @@ int main(void)
     LineDatabase db;
 
     const std::string TestFolder = "test";
-    const std::string TestFilePrefix = "/test5";
+    const std::string TestFilePrefix = "/test9";
     const std::string testFile = TestFolder + TestFilePrefix;
 
     const std::string testLinesCSV = testFile + "-Lines.csv";
