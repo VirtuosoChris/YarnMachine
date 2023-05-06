@@ -16,7 +16,7 @@
 //#define CALLBACK_ARGS NULL
 #define NIL_CALLBACK [](){}
 
-#define YARN_EXCEPTION(x) if (enableExceptions) { throw YarnException( x ); }
+#define YARN_EXCEPTION(x) if (settings.enableExceptions) { throw YarnException( x ); }
 
 #ifdef YARN_SERIALIZATION_JSON
 namespace nlohmann
@@ -107,7 +107,7 @@ void from_json(const nlohmann::json& j, YarnStack& p)
 }
 #endif
 
-struct YarnMachine : public YarnVMSettings
+struct YarnMachine
 {
     /*
     struct StaticContext
@@ -138,6 +138,8 @@ struct YarnMachine : public YarnVMSettings
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(Option, line, destination, enabled);
 #endif
     };
+
+    enum RunningState { RUNNING, STOPPED, AWAITING_INPUT };
 
     typedef std::function<void(void)> YarnCallback;
 
@@ -170,11 +172,20 @@ struct YarnMachine : public YarnVMSettings
     // this means we can't use std::default_random_engine for the generator since this is implementation defined.
     std::mt19937 generator;
 
+    std::size_t instructionPointer = 0;
+
+    RunningState runningState = RUNNING;
+
+    YarnVMSettings settings;
+
+    // --- the following members are not directly serializable but store some derived properties
+
+    Yarn::Program program;
+    const Yarn::Node* currentNode = nullptr;
+
     // --- The following members are NOT part of the serializable state! ---
 
     std::unordered_map<std::string, YarnFunction> functions;
-
-    Yarn::Program program;
 
     YarnCallbacks callbacks;
 
@@ -182,8 +193,7 @@ struct YarnMachine : public YarnVMSettings
 
     void fromJS(const nlohmann::json& js)
     {
-        YarnVMSettings& setts = *this;
-        setts = js["settings"].get<YarnVMSettings>();
+        settings = js["settings"].get<YarnVMSettings>();
 
         const std::string& generatorStr = js["generator"].get<std::string>();
         std::istringstream sstr(generatorStr);
@@ -192,6 +202,14 @@ struct YarnMachine : public YarnVMSettings
         variableStorage = js["variables"].get< std::unordered_map<std::string, Yarn::Operand>>();
         variableStack = js["stack"].get<YarnStack>();
         currentOptionsList = js["options"].get<OptionsList>();
+
+
+        instructionPointer = js["instructionPointer"].get<std::size_t>();
+        runningState = (RunningState)js["runningState"].get<int>();
+
+        ///\todo -- load the node from the node name, set the callback.
+
+        ///\todo load the program and database from input URI
     }
 
     nlohmann::json toJS() const
@@ -199,8 +217,8 @@ struct YarnMachine : public YarnVMSettings
         nlohmann::json rval;
 
         { // serialize the settings
-            const YarnVMSettings& setts = *this;
-            rval["settings"] = nlohmann::json(setts);
+
+            rval["settings"] = nlohmann::json(settings);
         }
 
         { // serialize the rng
@@ -221,6 +239,16 @@ struct YarnMachine : public YarnVMSettings
         { // serialize the current options list
 
             rval["options"] = nlohmann::json(currentOptionsList);
+        }
+
+        { // serialize the program state 
+            assert(currentNode != nullptr && currentNode->name().length());
+
+            if (currentNode != nullptr) { rval["currentNode"] = currentNode->name(); }
+
+            rval["instructionPointer"] = instructionPointer;
+
+            rval["runningState"] = (int)runningState;
         }
 
         return rval;
@@ -259,13 +287,13 @@ struct YarnMachine : public YarnVMSettings
 
     void selectOption(const Option& option)
     {
-        programState.runningState = ProgramState::RUNNING;
+        runningState = RUNNING;
 
-        std::int32_t translatedLabel = programState.currentNode->labels().at(option.destination);
+        std::int32_t translatedLabel = currentNode->labels().at(option.destination);
 
         currentOptionsList.resize(0);
 
-        programState.setInstruction(translatedLabel);
+        setInstruction(translatedLabel);
     }
 
     void selectOption(int selection)
@@ -333,7 +361,7 @@ struct YarnMachine : public YarnVMSettings
 
     void processInstruction(const Yarn::Instruction& instruction)
     {
-        if (!programState.currentNode)
+        if (!currentNode)
         {
             YARN_EXCEPTION("Current node is nullptr in processInstruction()");
         }
@@ -348,14 +376,14 @@ struct YarnMachine : public YarnVMSettings
                 const std::string& jumpLabel = get_string_operand(instruction, 0);
 
                 // -- hope this syntax is right for this lib!
-                if (programState.currentNode->labels().find(jumpLabel) == programState.currentNode->labels().end())
+                if (currentNode->labels().find(jumpLabel) == currentNode->labels().end())
                 {
                     YARN_EXCEPTION("JUMP_TO : Jump label doesn't exist in current node");
                 }
 
-                std::int32_t translatedLabel = programState.currentNode->labels().at(jumpLabel);
+                std::int32_t translatedLabel = currentNode->labels().at(jumpLabel);
 
-                programState.setInstruction(translatedLabel);
+                setInstruction(translatedLabel);
 
                 return;
             }
@@ -371,9 +399,9 @@ struct YarnMachine : public YarnVMSettings
 
                 const std::string& jumpLoc = stackTop.string_value();
 
-                std::int32_t translatedLabel = programState.currentNode->labels().at(jumpLoc);
+                std::int32_t translatedLabel = currentNode->labels().at(jumpLoc);
 
-                programState.setInstruction(translatedLabel);
+                setInstruction(translatedLabel);
 
                 return;
             }
@@ -551,9 +579,9 @@ struct YarnMachine : public YarnVMSettings
                 {
                     const std::string& labelName = get_string_operand(instruction, 0);
 
-                    std::int32_t translatedLabel = programState.currentNode->labels().at(labelName);
+                    std::int32_t translatedLabel = currentNode->labels().at(labelName);
 
-                    programState.setInstruction(translatedLabel);
+                    setInstruction(translatedLabel);
                 }
             }
             break;
@@ -602,7 +630,7 @@ struct YarnMachine : public YarnVMSettings
             break;
             case Yarn::Instruction_OpCode_STOP:
             {
-                programState.runningState = ProgramState::STOPPED;
+                runningState = STOPPED;
 
                 callbacks.onProgramStopped();
 
@@ -635,104 +663,54 @@ struct YarnMachine : public YarnVMSettings
             }
         };
 
-         programState.advance(*this);
+        advance();
     }
 
-    struct ProgramState
+    const Yarn::Instruction& currentInstruction()
     {
-        const Yarn::Node* currentNode = nullptr;
-        std::size_t instructionPointer = 0;
+        assert(currentNode);
+        assert(currentNode->instructions_size() > (instructionPointer));
 
-        enum RunningState { RUNNING, STOPPED, AWAITING_INPUT };
+        return currentNode->instructions(instructionPointer);
+    }
 
-        RunningState runningState = RUNNING;
-
-        const Yarn::Instruction& currentInstruction()
+    void setInstruction(std::int32_t instruction)
+    {
+        /*
+        if (!currentNode || (currentNode->instructions_size() > (instruction)))
         {
-            assert(currentNode);
-            assert(currentNode->instructions_size() > (instructionPointer));
+            throw YarnException("Invalid parameters for setInstruction()");
+        }
+        */
 
-            return currentNode->instructions(instructionPointer);
+        instructionPointer = instruction;
+    }
+
+    const Yarn::Instruction& advance()
+    {
+        if (runningState != RUNNING)
+        {
+            YARN_EXCEPTION("advance() called for next instruction when program is stopped");
         }
 
-        void setInstruction(std::int32_t instruction)
+        if (currentNode)
         {
-            /*
-            if (!currentNode || (currentNode->instructions_size() > (instruction)))
+            if (currentNode->instructions_size() > (instructionPointer + 1))
             {
-                throw YarnException("Invalid parameters for setInstruction()");
-            }
-            */
-
-            instructionPointer = instruction;
-        }
-
-        const Yarn::Instruction& advance(const YarnVMSettings& setts)
-        {
-            const bool& enableExceptions = setts.enableExceptions;
-
-            if (runningState != ProgramState::RUNNING)
-            {
-                YARN_EXCEPTION("advance() called for next instruction when program is stopped");
-            }
-
-            if (currentNode)
-            {
-                if (currentNode->instructions_size() > (instructionPointer + 1))
-                {
-                    instructionPointer++;
-                }
-                else
-                {
-                    YARN_EXCEPTION("nextInstruction() called when current node has no more instructions");
-                }
+                instructionPointer++;
             }
             else
             {
-                YARN_EXCEPTION("Current Node is nullptr in nextInstruction()");
+                YARN_EXCEPTION("nextInstruction() called when current node has no more instructions");
             }
-
-            return currentInstruction();
         }
-
-        ProgramState()
+        else
         {
+            YARN_EXCEPTION("Current Node is nullptr in nextInstruction()");
         }
 
-        ProgramState(const Yarn::Node& node, std::size_t iptr = 0)
-            :currentNode(&node),
-            instructionPointer(iptr)
-        {
-
-        }
-    };
-
-#ifdef YARN_SERIALIZATION_JSON
-
-    void to_json(nlohmann::json& j, const ProgramState& p)
-    {
-        assert(p.currentNode != nullptr && p.currentNode->name().length());
-
-        if (p.currentNode != nullptr) { j["currentNode"] = p.currentNode->name(); }
-
-        j["instructionPointer"] = p.instructionPointer;
-
-        j["runningState"] = (int)p.runningState;
+        return currentInstruction();
     }
-
-    void from_json(const nlohmann::json& j, ProgramState& p)
-    {
-        p.instructionPointer = j["instructionPointer"].get<std::size_t>();
-        p.runningState = (YarnMachine::ProgramState::RunningState)j["runningState"].get<int>();
-
-        ///\todo -- load the node from the node name, set the callback.
-        ///\todo this compartmentalization is a pain,  we'll just have a VM class.
-    }
-
-#endif
-
-
-    ProgramState programState;
 
     bool loadProgram(std::istream& is)
     {
@@ -1233,7 +1211,7 @@ struct YarnMachine : public YarnVMSettings
 
     YarnMachine(std::istream& is, const YarnVMSettings& setts = {})
         :
-        YarnVMSettings(setts),
+        settings(setts),
         generator(setts.randomSeed)
     {
         populateFuncs();
@@ -1248,7 +1226,7 @@ struct YarnMachine : public YarnVMSettings
 
     YarnMachine(const YarnVMSettings& setts = {})
         :
-        YarnVMSettings(setts),
+        settings(setts),
         generator(setts.randomSeed)
     {
         populateFuncs();
@@ -1256,16 +1234,13 @@ struct YarnMachine : public YarnVMSettings
         GOOGLE_PROTOBUF_VERIFY_VERSION;
     }
 
-    inline const Yarn::Node* currentNode()const
-    {
-        return programState.currentNode;
-    }
-
     bool loadNode(const std::string& node)
     {
         const Yarn::Node& nodeRef = program.nodes().at(node);
 
-        programState = ProgramState(nodeRef);
+        //programState = ProgramState(nodeRef);
+
+        currentNode = &nodeRef;
 
         callbacks.onChangeNode();
 

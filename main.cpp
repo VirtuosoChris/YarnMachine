@@ -242,22 +242,22 @@ int main(void)
 #if 1
     m.callbacks.onChangeNode = [&m]()
     {
-        std::cout << "Entering node : " << m.currentNode()->name();
-        if (m.currentNode()->tags_size())
+        std::cout << "Entering node : " << m.currentNode->name();
+        if (m.currentNode->tags_size())
         {
             std::cout << " with tags:\n";
 
-            for (auto& x : m.currentNode()->tags())
+            for (auto& x : m.currentNode->tags())
             {
                 std::cout << '\t' << x << '\n';
             }
         }
 
-        if (m.currentNode()->headers_size())
+        if (m.currentNode->headers_size())
         {
             std::cout << ", with headers\n";
 
-            for (auto& x : m.currentNode()->headers())
+            for (auto& x : m.currentNode->headers())
             {
                 std::cout << '\t' << x.key() << ' ' << x.value() << '\n';
             }
@@ -312,12 +312,12 @@ int main(void)
         m.loadNode("Start");
     }
 
-    const Yarn::Instruction& inst = m.programState.currentInstruction();
+    const Yarn::Instruction& inst = m.currentInstruction();
     m.processInstruction(inst);
 
-    while (m.programState.runningState == YarnMachine::ProgramState::RUNNING)
+    while (m.runningState == YarnMachine::RUNNING)
     {
-        m.processInstruction(m.programState.currentInstruction());
+        m.processInstruction(m.currentInstruction());
     }
 
     m.logVariables(std::cout);
