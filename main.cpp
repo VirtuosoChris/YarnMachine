@@ -1,14 +1,12 @@
-#include "yarn.h"
 #include "./depends/csv.hpp"
+#include "./depends/json.hpp" ///\todo
+
+#include "yarn.h"
 
 #include <iostream>
 #include <fstream>
-
 #include <chrono>
 
-#ifdef _WIN32
-#include <conio.h>
-#endif
 
 const int YARN_TAGS_COLUMN_INDEX = 3;
 
@@ -323,5 +321,14 @@ int main(void)
     }
 
     m.logVariables(std::cout);
+
+    nlohmann::json serialized = m.toJS();
+
+    std::ofstream outJS("YarnVMSerialized.json");
+
+    outJS << std::setw(4) <<  serialized;
+
+    outJS.close();
+
 }
 

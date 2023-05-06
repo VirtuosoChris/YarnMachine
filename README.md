@@ -41,4 +41,6 @@ https://docs.yarnspinner.dev/getting-started/writing-in-yarn/markup
 - The sample command binding functionality is supplied via VirtuosoConsole's QuakeStyleConsole.h 
 https://github.com/VirtuosoChris/VirtuosoConsole
 which can take an arbitrary c++ function and do template magic to generate type correct iostream parsers without writing any code yourself.  But you can do whatever you want with commands, like pass them to a scripting language or whatever else you want.
-- Tutorials and easy dependency fetching / building to come :)
+- The VM state is serializable, and uses nlohmann's c++ JSON library as a dependency to do this:
+https://github.com/nlohmann/json
+- Tutorials, examples, and easy dependency fetching / building to come :)

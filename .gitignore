@@ -3,3 +3,4 @@ install/*
 *.vcxproj
 Build/CMakeCache.txt
 depends/rapidcsv.h
+YarnVMSerialized.json

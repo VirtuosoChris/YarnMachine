@@ -1,11 +1,14 @@
 #pragma once
 
+#define YARN_SERIALIZATION_JSON
+
 #include <functional>
 #include <stack>
 #include <iostream>
 #include <random>
 
 #include <yarn_spinner.pb.h>
+
 
 #define YarnException std::runtime_error
 
@@ -15,13 +18,94 @@
 
 #define YARN_EXCEPTION(x) if (enableExceptions) { throw YarnException( x ); }
 
+#ifdef YARN_SERIALIZATION_JSON
+namespace nlohmann
+{
+    template<>
+    struct adl_serializer<Yarn::Operand>
+    {
+        static void to_json(json& js, const Yarn::Operand& op)
+        {
+            if (op.has_bool_value())
+            {
+                js = { {"value", op.bool_value()}, {"type", "bool"} };
+            }
+
+            else if (op.has_float_value())
+            {
+                js = { {"value", op.float_value()}, {"type", "float"} };
+            }
+
+            else if (op.has_float_value())
+            {
+                js = { {"value", op.string_value()}, {"type", "string"} };
+            }
+
+            else js = { {"value", "UNDEFINED"}, {"type", "UNDEFINED"} };
+ 
+        }
+
+        static void from_json(const json& j, Yarn::Operand& opt)
+        {
+            const std::string& typestr = j["type"].get<std::string>();
+
+            if (typestr == "float")
+            {
+                opt.set_float_value ( j.get<float>());
+            }
+            else if (typestr == "string")
+            {
+                opt.set_string_value(j.get<std::string>());
+            }
+            else if (typestr == "bool")
+            {
+                opt.set_bool_value(j.get<bool>());
+            }
+            else
+            {
+                ///\todo except
+            }
+        }
+    };
+}
+#endif
+
 struct YarnVMSettings
 {
     std::mt19937::result_type randomSeed = std::mt19937::default_seed;
     bool enableExceptions = true;
 
-    ///\todo serialize the settings too
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(YarnVMSettings, randomSeed, enableExceptions);
 };
+
+class YarnStack : public std::stack <Yarn::Operand>
+{
+public:
+
+#ifdef YARN_SERIALIZATION_JSON
+    nlohmann::json to_json() const
+    {
+        return nlohmann::json(this->_Get_container());
+    }
+
+    void from_json(const nlohmann::json& js)
+    {
+        this->c = js.get<YarnStack::container_type>();
+    }
+#endif
+};
+
+#ifdef YARN_SERIALIZATION_JSON
+void to_json(nlohmann::json& j, const YarnStack& p)
+{
+    j = p.to_json();
+}
+
+void from_json(const nlohmann::json& j, YarnStack& p)
+{
+    p.from_json(j);
+}
+#endif
 
 struct YarnMachine : public YarnVMSettings
 {
@@ -38,6 +122,10 @@ struct YarnMachine : public YarnVMSettings
     {
         std::string id;
         std::vector<Yarn::Operand> substitutions;
+
+#ifdef YARN_SERIALIZATION_JSON
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(Line, id, substitutions);
+#endif
     };
 
     struct Option
@@ -45,20 +133,99 @@ struct YarnMachine : public YarnVMSettings
         Line line;
         std::string destination; // destination to go to if this option is selected
         bool  enabled;           // whether the option has a condition on it(in which case a value should be popped off the stack and used to signal the game that the option should be not available) (????????????)
+
+#ifdef YARN_SERIALIZATION_JSON
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(Option, line, destination, enabled);
+#endif
     };
+
+    typedef std::function<void(void)> YarnCallback;
 
     typedef std::function<Yarn::Operand(YarnMachine& yarn, int parameterCount)> YarnFunction; ///\todo arguments
     typedef std::vector<Option> OptionsList;
+
+    #define YARN_CALLBACK(name) YarnCallback name = NIL_CALLBACK;
+    #define YARN_FUNC(x) functions[ x ] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+
+    struct YarnCallbacks
+    {
+        YARN_CALLBACK(onProgramStopped);
+        YARN_CALLBACK(onChangeNode);
+
+        std::function<void(const YarnMachine::Line&)> onLine = [](const YarnMachine::Line& line) {};
+        std::function<void(const std::string&)> onCommand = [](const std::string&) {};
+        std::function<void(const OptionsList&)> onShowOptions = [](const OptionsList&) {};
+    };
+
+    /// --- VM state members which are serializable! ---
+
     OptionsList currentOptionsList;
 
-    std::stack <Yarn::Operand> variableStack;
+    YarnStack variableStack;
+
     std::unordered_map<std::string, Yarn::Operand> variableStorage;
-    std::unordered_map<std::string, YarnFunction> functions;
 
     // https://stackoverflow.com/questions/27727012/c-stdmt19937-and-rng-state-save-load-portability
     // we want to be able to serialize / deserialize the rng state and continue deterministically
     // this means we can't use std::default_random_engine for the generator since this is implementation defined.
     std::mt19937 generator;
+
+    // --- The following members are NOT part of the serializable state! ---
+
+    std::unordered_map<std::string, YarnFunction> functions;
+
+    Yarn::Program program;
+
+    YarnCallbacks callbacks;
+
+#ifdef YARN_SERIALIZATION_JSON
+
+    void fromJS(const nlohmann::json& js)
+    {
+        YarnVMSettings& setts = *this;
+        setts = js["settings"].get<YarnVMSettings>();
+
+        const std::string& generatorStr = js["generator"].get<std::string>();
+        std::istringstream sstr(generatorStr);
+        sstr >> generator;
+
+        variableStorage = js["variables"].get< std::unordered_map<std::string, Yarn::Operand>>();
+        variableStack = js["stack"].get<YarnStack>();
+        currentOptionsList = js["options"].get<OptionsList>();
+    }
+
+    nlohmann::json toJS() const
+    {
+        nlohmann::json rval;
+
+        { // serialize the settings
+            const YarnVMSettings& setts = *this;
+            rval["settings"] = nlohmann::json(setts);
+        }
+
+        { // serialize the rng
+            std::stringstream sstr;
+            sstr << generator;
+            rval["generator"] = sstr.str();
+        }
+
+        { // serialize variable storage
+            rval["variables"] = nlohmann::json(variableStorage);
+        }
+
+        { // serialize the stack
+            // std::list <Yarn::Operand> variableStack2;
+            rval["stack"] = nlohmann::json(variableStack);
+        }
+
+        { // serialize the current options list
+
+            rval["options"] = nlohmann::json(currentOptionsList);
+        }
+
+        return rval;
+    }
+#endif
 
     /// write all variables, types, and values to an ostream as key:value pairs, one variable per line
     std::ostream& logVariables(std::ostream& str)
@@ -89,24 +256,6 @@ struct YarnMachine : public YarnVMSettings
 
         return str;
     }
-
-    Yarn::Program program;
-
-    typedef std::function<void(void)> YarnCallback;
-
-#define YARN_CALLBACK(name) YarnCallback name = NIL_CALLBACK;
-
-    struct YarnCallbacks
-    {
-        YARN_CALLBACK(onProgramStopped);
-        YARN_CALLBACK(onChangeNode);
-
-        std::function<void(const YarnMachine::Line&)> onLine = [](const YarnMachine::Line& line) {};
-        std::function<void(const std::string&)> onCommand = [](const std::string&) {};
-        std::function<void(const OptionsList&)> onShowOptions = [](const OptionsList&) {};
-    };
-
-    YarnCallbacks callbacks;
 
     void selectOption(const Option& option)
     {
@@ -558,6 +707,31 @@ struct YarnMachine : public YarnVMSettings
         }
     };
 
+#ifdef YARN_SERIALIZATION_JSON
+
+    void to_json(nlohmann::json& j, const ProgramState& p)
+    {
+        assert(p.currentNode != nullptr && p.currentNode->name().length());
+
+        if (p.currentNode != nullptr) { j["currentNode"] = p.currentNode->name(); }
+
+        j["instructionPointer"] = p.instructionPointer;
+
+        j["runningState"] = (int)p.runningState;
+    }
+
+    void from_json(const nlohmann::json& j, ProgramState& p)
+    {
+        p.instructionPointer = j["instructionPointer"].get<std::size_t>();
+        p.runningState = (YarnMachine::ProgramState::RunningState)j["runningState"].get<int>();
+
+        ///\todo -- load the node from the node name, set the callback.
+        ///\todo this compartmentalization is a pain,  we'll just have a VM class.
+    }
+
+#endif
+
+
     ProgramState programState;
 
     bool loadProgram(std::istream& is)
@@ -570,9 +744,6 @@ struct YarnMachine : public YarnVMSettings
 
         return parsed;
     }
-
-#define YARN_FUNC(x) functions[ x ] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
-
 
     unsigned int visitedCount(const std::string& node)
     {
