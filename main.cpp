@@ -5,6 +5,17 @@
 #include <fstream>
 #include <chrono>
 
+#include <QuakeStyleConsole.h>
+
+
+void beep(int count)
+{
+    for (int i = 0; i < count; i++)
+    {
+        std::cerr << '\a';
+    }
+}
+
 /// A simple Yarn Dialogue Runner example that uses the console / cin / cout
 /// This shows the intended usage of this library.
 /// There are a lot of things that will be implementation dependent in your game / engine
@@ -19,12 +30,24 @@ struct YarnRunnerConsole
 {
     Yarn::LineDatabase db;
     Yarn::YarnVM vm;
+    Virtuoso::QuakeStyleConsole commands; ///< Use a c++ quake style console as a command parser / command provider
 
     YarnRunnerConsole()
     {
         setCallbacks();
+        setCommands();
     }
 
+    void setCommands()
+    {
+        // 2 built in commands in Yarn specification : wait, and stop
+        // stop is already handled by the compiler.
+        // so we implement wait.
+        // we also implement a beep command that takes a single integer argument for the number of times we beep.
+
+        commands.bindCommand("beep", beep, "usage : beep <count>. Beep beep!");
+        commands.bindMemberCommand("wait", vm, &Yarn::YarnVM::setWaitTime, "usage: wait <time>.  current time and time units determined by yarn dialogue runner.");
+    }
 
 #ifdef YARN_SERIALIZATION_JSON
     void save(const std::string& saveFile = "YarnVMSerialized.json")
@@ -84,9 +107,11 @@ struct YarnRunnerConsole
 
     void setCallbacks()
     {
-        vm.callbacks.onCommand = [](const std::string& command)
+        vm.callbacks.onCommand = [this](const std::string& command)
         {
             std::cout << "command : " << command << std::endl;
+
+            this->commands.commandExecute(std::cin, std::cout);
         };
 
         vm.callbacks.onLine = [this](const Yarn::YarnVM::Line& line)
@@ -224,7 +249,59 @@ struct YarnRunnerConsole
         };
     }
 
+    void loop()
+    {
+        const Yarn::Instruction& inst = vm.currentInstruction();
+        vm.processInstruction(inst);
+
+        while (true)
+        {
+            // update the time
+
+            switch (vm.runningState)
+            {
+            case Yarn::YarnVM::RUNNING:
+                vm.processInstruction(vm.currentInstruction());
+                break;
+            case Yarn::YarnVM::ASLEEP:
+                break;
+            default:
+                return;
+            }
+        }
+
+    }
+
 };
+
+/// write all variables, types, and values to an ostream as key:value pairs, one variable per line
+std::ostream& logVariables(std::ostream& str, const Yarn::YarnVM& vm)
+{
+    for (auto it = vm.variableStorage.begin(); it != vm.variableStorage.end(); it++)
+    {
+        str << "name:" << it->first << "\ttype:";
+
+        if (it->second.has_bool_value())
+        {
+            str << "bool\tvalue:" << it->second.bool_value() << '\n';
+        }
+        else if (it->second.has_float_value())
+        {
+            str << "float\tvalue:" << it->second.float_value() << '\n';
+        }
+        else if (it->second.has_string_value())
+        {
+            str << "string\tvalue:" << it->second.string_value() << '\n';
+        }
+        else
+        {
+            // this should never happen
+            str << "UNDEFINED\tvalue:UNDEFINED\n";
+        }
+    }
+
+    return str;
+}
 
 
 int main(void)
@@ -235,15 +312,13 @@ int main(void)
 
     YarnRunnerConsole yarn;
 
-    const Yarn::Instruction& inst = yarn.vm.currentInstruction();
-    yarn.vm.processInstruction(inst);
+    yarn.loadModule(testFile);
 
-    while (yarn.vm.runningState == Yarn::YarnVM::RUNNING)
-    {
-        yarn.vm.processInstruction(yarn.vm.currentInstruction());
-    }
+    // do the main loop and run the program.
+    yarn.loop();
 
-    yarn.vm.logVariables(std::cout);
+    // dump variables to the console after the script runs
+    logVariables(std::cout, yarn.vm);
 
 }
 

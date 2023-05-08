@@ -16,8 +16,6 @@ namespace Yarn
 
 #define YarnException std::runtime_error
 
-//#define CALLBACK_ARGS_PROTOTYPE void
-//#define CALLBACK_ARGS NULL
 #define NIL_CALLBACK [](){}
 
 #define YARN_EXCEPTION(x) if (settings.enableExceptions) { throw YarnException( x ); }
@@ -187,6 +185,7 @@ struct YarnVM
     YarnVMSettings settings;
 
     long long time;
+    long long waitUntilTime;
 
     // --- the following members are not directly serializable but store some derived properties
 
@@ -200,9 +199,19 @@ struct YarnVM
 
     YarnCallbacks callbacks;
 
-    void setTime(long long timeIn) { time = timeIn; }
+    void setTime(long long timeIn)
+    {
+        time = timeIn;
 
-    void incrementTime(long long dt) { time += dt; }
+        // check if sleep time is expired
+        if (runningState == ASLEEP && (time >= waitUntilTime)) { runningState = RUNNING; }
+    }
+
+    void incrementTime(long long dt) { setTime(time + dt); }
+
+    void waitUntil(long long t) { waitUntilTime = t; runningState = RunningState::ASLEEP; }
+
+    void setWaitTime(long long t) { waitUntil(time + t); }
 
 #ifdef YARN_SERIALIZATION_JSON
 
@@ -276,36 +285,6 @@ struct YarnVM
     }
 #endif
 
-    /// write all variables, types, and values to an ostream as key:value pairs, one variable per line
-    std::ostream& logVariables(std::ostream& str)
-    {
-        for (auto it = variableStorage.begin(); it != variableStorage.end(); it++)
-        {
-
-            str << "name:" << it->first << "\ttype:";
-
-            if (it->second.has_bool_value())
-            {
-                str << "bool\tvalue:" << it->second.bool_value() << '\n';
-            }
-            else if (it->second.has_float_value())
-            {
-                str << "float\tvalue:" << it->second.float_value() << '\n';
-            }
-            else if (it->second.has_string_value())
-            {
-                str << "string\tvalue:" << it->second.string_value() << '\n';
-            }
-            else
-            {
-                // this should never happen
-                str << "UNDEFINED\tvalue:UNDEFINED\n";
-            }
-        }
-
-        return str;
-    }
-
     void selectOption(const Option& option)
     {
         runningState = RUNNING;
@@ -326,7 +305,6 @@ struct YarnVM
 
         selectOption(currentOptionsList[selection]);
     }
-
 
     std::string get_string_operand(const Yarn::Instruction& instruction, int index)
     {
