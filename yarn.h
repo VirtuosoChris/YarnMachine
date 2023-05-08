@@ -1,7 +1,5 @@
 #pragma once
 
-#define YARN_SERIALIZATION_JSON
-
 #include <functional>
 #include <stack>
 #include <iostream>
@@ -9,6 +7,12 @@
 
 #include <yarn_spinner.pb.h>
 
+#ifdef YARN_SERIALIZATION_JSON
+#include <json.hpp>
+#endif
+
+namespace Yarn
+{
 
 #define YarnException std::runtime_error
 
@@ -75,7 +79,11 @@ struct YarnVMSettings
     std::mt19937::result_type randomSeed = std::mt19937::default_seed;
     bool enableExceptions = true;
 
+
+#ifdef YARN_SERIALIZATION_JSON
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(YarnVMSettings, randomSeed, enableExceptions);
+#endif
+
 };
 
 class YarnStack : public std::stack <Yarn::Operand>
@@ -107,7 +115,7 @@ void from_json(const nlohmann::json& j, YarnStack& p)
 }
 #endif
 
-struct YarnMachine
+struct YarnVM
 {
     /*
     struct StaticContext
@@ -139,22 +147,22 @@ struct YarnMachine
 #endif
     };
 
-    enum RunningState { RUNNING, STOPPED, AWAITING_INPUT };
+    enum RunningState { RUNNING, STOPPED, AWAITING_INPUT, ASLEEP};
 
     typedef std::function<void(void)> YarnCallback;
 
-    typedef std::function<Yarn::Operand(YarnMachine& yarn, int parameterCount)> YarnFunction; ///\todo arguments
+    typedef std::function<Yarn::Operand(YarnVM& yarn, int parameterCount)> YarnFunction; ///\todo arguments
     typedef std::vector<Option> OptionsList;
 
     #define YARN_CALLBACK(name) YarnCallback name = NIL_CALLBACK;
-    #define YARN_FUNC(x) functions[ x ] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+    #define YARN_FUNC(x) functions[ x ] = [](YarnVM& yarn, int parameters)->Yarn::Operand
 
     struct YarnCallbacks
     {
         YARN_CALLBACK(onProgramStopped);
         YARN_CALLBACK(onChangeNode);
 
-        std::function<void(const YarnMachine::Line&)> onLine = [](const YarnMachine::Line& line) {};
+        std::function<void(const YarnVM::Line&)> onLine = [](const YarnVM::Line& line) {};
         std::function<void(const std::string&)> onCommand = [](const std::string&) {};
         std::function<void(const OptionsList&)> onShowOptions = [](const OptionsList&) {};
     };
@@ -178,16 +186,23 @@ struct YarnMachine
 
     YarnVMSettings settings;
 
+    long long time;
+
     // --- the following members are not directly serializable but store some derived properties
 
     Yarn::Program program;
     const Yarn::Node* currentNode = nullptr;
 
     // --- The following members are NOT part of the serializable state! ---
+    // c++ callbacks and function tables are to be populated directly by the client / game code
 
     std::unordered_map<std::string, YarnFunction> functions;
 
     YarnCallbacks callbacks;
+
+    void setTime(long long timeIn) { time = timeIn; }
+
+    void incrementTime(long long dt) { time += dt; }
 
 #ifdef YARN_SERIALIZATION_JSON
 
@@ -206,6 +221,8 @@ struct YarnMachine
 
         instructionPointer = js["instructionPointer"].get<std::size_t>();
         runningState = (RunningState)js["runningState"].get<int>();
+
+        time = js["time"].get<long long>();
 
         ///\todo -- load the node from the node name, set the callback.
 
@@ -249,6 +266,10 @@ struct YarnMachine
             rval["instructionPointer"] = instructionPointer;
 
             rval["runningState"] = (int)runningState;
+        }
+
+        { // serialize the time
+            rval["time"] = time;
         }
 
         return rval;
@@ -415,7 +436,7 @@ struct YarnMachine
 
                 int substitutions = get_float_operand(instruction, 1);
 
-                YarnMachine::Line l;
+                YarnVM::Line l;
                 l.id = lineID;
 
                 l.substitutions.reserve(substitutions);
@@ -741,7 +762,7 @@ struct YarnMachine
 
     void populateFuncs()
     {
-        functions["Number.Add"] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+        functions["Number.Add"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
         {
             Yarn::Operand rval;
 
@@ -755,7 +776,7 @@ struct YarnMachine
             return rval;
         };
 
-        functions["Number.Minus"] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+        functions["Number.Minus"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
         {
             Yarn::Operand rval;
 
@@ -769,7 +790,7 @@ struct YarnMachine
             return rval;
         };
 
-        functions["Number.Multiply"] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+        functions["Number.Multiply"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
         {
             Yarn::Operand rval;
 
@@ -783,7 +804,7 @@ struct YarnMachine
             return rval;
         };
 
-        functions["Number.Divide"] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+        functions["Number.Divide"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
         {
             Yarn::Operand rval;
 
@@ -797,7 +818,7 @@ struct YarnMachine
             return rval;
         };
 
-        functions["Number.Modulo"] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+        functions["Number.Modulo"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
         {
             Yarn::Operand rval;
 
@@ -811,7 +832,7 @@ struct YarnMachine
             return rval;
         };
 
-        functions["Number.LessThan"] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+        functions["Number.LessThan"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
         {
             Yarn::Operand rval;
 
@@ -825,7 +846,7 @@ struct YarnMachine
             return rval;
         };
 
-        functions["Number.EqualTo"] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+        functions["Number.EqualTo"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
         {
             Yarn::Operand rval;
 
@@ -840,7 +861,7 @@ struct YarnMachine
             return rval;
         };
 
-        functions["Number.GreaterThan"] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+        functions["Number.GreaterThan"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
         {
             Yarn::Operand rval;
 
@@ -854,7 +875,7 @@ struct YarnMachine
             return rval;
         };
 
-        functions["Number.GreaterThanOrEqualTo"] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+        functions["Number.GreaterThanOrEqualTo"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
         {
             Yarn::Operand rval;
 
@@ -868,7 +889,7 @@ struct YarnMachine
             return rval;
         };
 
-        functions["Number.LessThanOrEqualTo"] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+        functions["Number.LessThanOrEqualTo"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
         {
             Yarn::Operand rval;
 
@@ -882,7 +903,7 @@ struct YarnMachine
             return rval;
         };
 
-        functions["Bool.And"] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+        functions["Bool.And"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
         {
             Yarn::Operand rval;
 
@@ -896,7 +917,7 @@ struct YarnMachine
             return rval;
         };
 
-        functions["Bool.Or"] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+        functions["Bool.Or"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
         {
             Yarn::Operand rval;
 
@@ -910,7 +931,7 @@ struct YarnMachine
             return rval;
         };
 
-        functions["Bool.Xor"] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+        functions["Bool.Xor"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
         {
             Yarn::Operand rval;
 
@@ -924,7 +945,7 @@ struct YarnMachine
             return rval;
         };
 
-        functions["Bool.Not"] = [](YarnMachine& yarn, int parameters)->Yarn::Operand
+        functions["Bool.Not"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
         {
             Yarn::Operand rval;
 
@@ -1209,7 +1230,7 @@ struct YarnMachine
 
     }
 
-    YarnMachine(std::istream& is, const YarnVMSettings& setts = {})
+    YarnVM(std::istream& is, const YarnVMSettings& setts = {})
         :
         settings(setts),
         generator(setts.randomSeed)
@@ -1224,7 +1245,7 @@ struct YarnMachine
         }
     }
 
-    YarnMachine(const YarnVMSettings& setts = {})
+    YarnVM(const YarnVMSettings& setts = {})
         :
         settings(setts),
         generator(setts.randomSeed)
@@ -1247,3 +1268,4 @@ struct YarnMachine
         return true; ///\todo true
     }
 };
+}

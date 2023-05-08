@@ -1,334 +1,249 @@
-#include "./depends/csv.hpp"
-#include "./depends/json.hpp" ///\todo
-
 #include "yarn.h"
+#include "yarn_line_database.h"
 
 #include <iostream>
 #include <fstream>
 #include <chrono>
 
-
-const int YARN_TAGS_COLUMN_INDEX = 3;
-
-using namespace csv;
-
-struct LineData
+/// A simple Yarn Dialogue Runner example that uses the console / cin / cout
+/// This shows the intended usage of this library.
+/// There are a lot of things that will be implementation dependent in your game / engine
+/// For example, dialogue display / formatting, control flow, command implementations, time, etc.
+/// So the intended usage is to have a runner class that:
+/// - Creates a Yarn VM that runs the .yarnc scripts, and signals a callback with commands, options, and line id's to run
+/// - Creates and populates a line database that is queried whenever the Yarn VM signals that a line of dialogue should run
+/// - handles input, processes and displays output, runs commands, and controls the "loop" of when the VM runs
+/// - controls serialization and deserialization of the VM state using the provided methods
+/// - make c++ std::function bindings for (non-built-in) functions and vm callbacks
+struct YarnRunnerConsole
 {
-    std::string id;
-    std::string text;
-    std::string file;
-    std::string node;
-    int lineNumber = 0;
+    Yarn::LineDatabase db;
+    Yarn::YarnVM vm;
 
-    uint64_t sizeBytes() const
+    YarnRunnerConsole()
     {
-        return id.size() + sizeof(id)
-            + text.size() + sizeof(text)
-            + file.size() + sizeof(file)
-            + node.size() + sizeof(node)
-            + sizeof(lineNumber);
-    }
-};
-
-typedef std::string LineID;
-typedef std::string LineTag;
-
-struct LineDatabase
-{
-    std::unordered_map<LineID, LineData> lines;
-    long long parsingTime = 0;
-
-    std::unordered_map<LineID, std::unordered_set<LineTag> > tags;
-
-    uint64_t lineCount()
-    {
-        return lines.size();
+        setCallbacks();
     }
 
-    uint64_t sizeBytes()
+
+#ifdef YARN_SERIALIZATION_JSON
+    void save(const std::string& saveFile = "YarnVMSerialized.json")
     {
-        uint64_t rval = 0;
-        for (const auto& [key, value] : lines)
-        {
-            rval += value.sizeBytes();
-        }
-        return rval;
+        nlohmann::json serialized = vm.toJS();
+
+        std::ofstream outJS(saveFile);
+
+        outJS << std::setw(4) << serialized;
+
+        outJS.close();
+
+        ///\todo
     }
 
-    LineDatabase()
+    void restore(const std::string& restoreFile = "YarnVMSerialized.json")
     {
+        ///\todo
     }
 
-    LineDatabase(const std::string_view& csvFile)
-    {
-        loadLines(csvFile);
-    }
-
-    void loadMetadata(const std::string_view& csvFile)
-    {
-        auto start = std::chrono::high_resolution_clock::now();
-
-        csv::CSVFormat format;
-        format.variable_columns(true);
-        format.variable_columns(VariableColumnPolicy::KEEP);
-
-        csv::CSVReader reader(csvFile, format);
-
-        for (const CSVRow& row : reader)
-        {
-            std::string id = row["id"].get();
-
-            for (int i = YARN_TAGS_COLUMN_INDEX; i < row.size(); i++)
-            {
-                tags[id].insert(row[i].get());
-            }
-        }
-
-        auto stop = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-
-        parsingTime += duration.count();
-    }
-
-    void loadLines(const std::string_view& csvFile)
-    {
-        auto start = std::chrono::high_resolution_clock::now();
-
-        csv::CSVReader reader(csvFile);
-
-        for (const CSVRow& row : reader)
-        {
-            int lineNumber = 0;
-
-            if (row["lineNumber"].is_int())
-            {
-                lineNumber = row["lineNumber"].get<int>();
-            }
-            else
-            {
-                assert(0);
-            }
-
-            std::string id = row["id"].get();
-
-            lines[id] = 
-            {
-                id,
-                row["text"].get(),
-                row["file"].get(),
-                row["node"].get(),
-                lineNumber
-            };
-        }
-
-        auto stop = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-
-        parsingTime += duration.count();
-    }
-};
-
-
-int main(void)
-{
-    LineDatabase db;
-
-    const std::string TestFolder = "test";
-    const std::string TestFilePrefix = "/test9";
-    const std::string testFile = TestFolder + TestFilePrefix;
-
-    const std::string testLinesCSV = testFile + "-Lines.csv";
-    const std::string testMetaCSV = testFile + "-Metadata.csv";
-    const std::string yarncFile = testFile + ".yarnc";
-
-    db.loadLines(testLinesCSV);
-    db.loadMetadata(testMetaCSV);
-
-#if _DEBUG
-    std::cout << "Loading lines from : " << testLinesCSV << std::endl;
-    std::cout << "Line database total lines : " << db.lineCount() << std::endl;
-    std::cout << "Line database size (bytes) : " << db.sizeBytes() << std::endl;
-    std::cout << "Time spent in parsing (ms) : " << db.parsingTime << std::endl;
 #endif
 
-    YarnMachine m;
-
-    //std::cout << m.generator << std::endl;
-
-    m.callbacks.onCommand = [](const std::string& command)
+    void loadModule(const std::string& moduleName)
     {
-        std::cout << "command : " << command << std::endl;
-    };
+        const std::string testLinesCSV = moduleName + "-Lines.csv";
+        const std::string testMetaCSV = moduleName + "-Metadata.csv";
+        const std::string yarncFile = moduleName + ".yarnc";
 
-    m.callbacks.onLine = [&db](const YarnMachine::Line& line)
+        db.loadLines(testLinesCSV);
+        db.loadMetadata(testMetaCSV);
+
+#if _DEBUG
+        std::cout << "Loading lines from : " << testLinesCSV << std::endl;
+        std::cout << "Line database total lines : " << db.lineCount() << std::endl;
+        std::cout << "Line database size (bytes) : " << db.sizeBytes() << std::endl;
+        std::cout << "Time spent in parsing (ms) : " << db.parsingTime << std::endl;
+#endif
+
+        std::ifstream file(yarncFile, std::ios::binary | std::ios::in);
+
+        bool fileOpen = file.is_open();
+
+        std::clog << "file open? : " << fileOpen << std::endl;
+
+        vm.loadProgram(file);
+
+        //m.printNodes();
+
+        auto it = vm.program.nodes().begin();
+        if ((it = vm.program.nodes().find("Start")) != vm.program.nodes().end())
+        {
+            const Yarn::Node& startnode = it->second;
+
+            vm.loadNode("Start");
+        }
+    }
+
+    void setCallbacks()
     {
-        //
+        vm.callbacks.onCommand = [](const std::string& command)
+        {
+            std::cout << "command : " << command << std::endl;
+        };
+
+        vm.callbacks.onLine = [this](const Yarn::YarnVM::Line& line)
+        {
+            //
 #ifdef _WIN32
         //getch();
 #endif
 
 #if 1
 
-        std::cout << "Running line " << line.id;
+            std::cout << "Running line " << line.id;
 
-        if (db.tags[line.id].size())
-        {
-            std::cout << " With tags : \n";
-
-            for (auto& tag : db.tags[line.id])
+            if (db.tags[line.id].size())
             {
-                std::cout << '\t' << tag << '\n';
+                std::cout << " With tags : \n";
+
+                for (auto& tag : db.tags[line.id])
+                {
+                    std::cout << '\t' << tag << '\n';
+                }
             }
-        }
-        std::cout << std::endl;
+            std::cout << std::endl;
 #endif
 
-        std::stringstream sstr;
+            std::stringstream sstr;
 
-        int subsRemaining = line.substitutions.size();
+            int subsRemaining = line.substitutions.size();
 
-        if (!subsRemaining)
-        {
-            std::cout << db.lines[line.id].text << std::endl;
-        }
-        else
-        {
-            ///\todo major audit of this.
-
-            std::string_view sv(db.lines[line.id].text);
-
-            for (int i = 0; i < sv.size(); i++)
+            if (!subsRemaining)
             {
-                if (sv[i] == '{')
+                std::cout << db.lines[line.id].text << std::endl;
+            }
+            else
+            {
+                ///\todo major audit of this.
+
+                std::string_view sv(db.lines[line.id].text);
+
+                for (int i = 0; i < sv.size(); i++)
                 {
-                    int arg = -1;
-                    i++;
-                    std::istringstream is(sv.data() + i);
-                    is >> arg;
-
-                    while (isdigit(sv[i]))i++;
-
-                    assert(sv[i] == '}');
-
-                    const auto& sub = line.substitutions[subsRemaining - arg - 1];
-
-                    if (sub.has_bool_value())
+                    if (sv[i] == '{')
                     {
-                        sstr << sub.bool_value();
-                    }
-                    else if (sub.has_float_value())
-                    {
-                        sstr << sub.float_value();
-                    }
-                    else if (sub.has_string_value())
-                    {
-                        sstr << sub.string_value();
+                        int arg = -1;
+                        i++;
+                        std::istringstream is(sv.data() + i);
+                        is >> arg;
+
+                        while (isdigit(sv[i]))i++;
+
+                        assert(sv[i] == '}');
+
+                        const auto& sub = line.substitutions[subsRemaining - arg - 1];
+
+                        if (sub.has_bool_value())
+                        {
+                            sstr << sub.bool_value();
+                        }
+                        else if (sub.has_float_value())
+                        {
+                            sstr << sub.float_value();
+                        }
+                        else if (sub.has_string_value())
+                        {
+                            sstr << sub.string_value();
+                        }
+                        else
+                        {
+                            assert(0 && "bad variable");
+                        }
                     }
                     else
                     {
-                        assert(0 && "bad variable");
+                        sstr << sv[i];
                     }
                 }
-                else
+
+                std::cout << sstr.str() << std::endl;
+            }
+        };
+
+#if 1
+        vm.callbacks.onChangeNode = [this]()
+        {
+            std::cout << "Entering node : " << vm.currentNode->name();
+            if (vm.currentNode->tags_size())
+            {
+                std::cout << " with tags:\n";
+
+                for (auto& x : this->vm.currentNode->tags())
                 {
-                    sstr << sv[i];
+                    std::cout << '\t' << x << '\n';
                 }
             }
 
-            std::cout << sstr.str() << std::endl;
-        }
-    };
-
-#if 1
-    m.callbacks.onChangeNode = [&m]()
-    {
-        std::cout << "Entering node : " << m.currentNode->name();
-        if (m.currentNode->tags_size())
-        {
-            std::cout << " with tags:\n";
-
-            for (auto& x : m.currentNode->tags())
+            if (vm.currentNode->headers_size())
             {
-                std::cout << '\t' << x << '\n';
-            }
-        }
+                std::cout << ", with headers\n";
 
-        if (m.currentNode->headers_size())
-        {
-            std::cout << ", with headers\n";
-
-            for (auto& x : m.currentNode->headers())
-            {
-                std::cout << '\t' << x.key() << ' ' << x.value() << '\n';
+                for (auto& x : vm.currentNode->headers())
+                {
+                    std::cout << '\t' << x.key() << ' ' << x.value() << '\n';
+                }
             }
-        }
-        std::cout << std::endl;
-    };
+            std::cout << std::endl;
+        };
 #endif
 
-    m.callbacks.onShowOptions = [&db, &m](const YarnMachine::OptionsList& opts)
-    {
-        for (int i = 0; i < opts.size(); i++)
+        vm.callbacks.onShowOptions = [this](const Yarn::YarnVM::OptionsList& opts)
         {
-            ///\todo substitutions
-            const std::string& lineID = opts[i].line.id;
-            std::cout << '\t' << (i+1) << ") " << db.lines[lineID].text << std::endl;
+            for (int i = 0; i < opts.size(); i++)
+            {
+                ///\todo substitutions
+                const std::string& lineID = opts[i].line.id;
+                std::cout << '\t' << (i + 1) << ") " << db.lines[lineID].text << std::endl;
 
-            ///\todo input string validation
-        }
+                ///\todo input string validation
+            }
 
-        int lineIndex = 0;
+            int lineIndex = 0;
 
-        std::cin >> lineIndex;
+            std::cin >> lineIndex;
 
-        lineIndex -= 1; // zero offset on cin
+            lineIndex -= 1; // zero offset on cin
 
-        const YarnMachine::Option& line = opts[lineIndex];
+            const Yarn::YarnVM::Option& line = opts[lineIndex];
 
-        Yarn::Operand op;
-        op.set_string_value(line.destination);
+            Yarn::Operand op;
+            op.set_string_value(line.destination);
 
-        m.variableStack.push(op);
+            vm.variableStack.push(op);
 
-        ///\todo this doesn't belong here!
-        m.currentOptionsList.clear();
-    };
-
-    std::ifstream file(yarncFile, std::ios::binary | std::ios::in);
-
-    bool fileOpen = file.is_open();
-
-    std::clog << "file open? : " << fileOpen << std::endl;
-
-    m.loadProgram(file);
-
-    //m.printNodes();
-
-    auto it = m.program.nodes().begin();
-    if (( it = m.program.nodes().find("Start")) != m.program.nodes().end())
-    {
-        const Yarn::Node& startnode = it->second;
-
-        m.loadNode("Start");
+            ///\todo this doesn't belong here!
+            vm.currentOptionsList.clear();
+        };
     }
 
-    const Yarn::Instruction& inst = m.currentInstruction();
-    m.processInstruction(inst);
+};
 
-    while (m.runningState == YarnMachine::RUNNING)
+
+int main(void)
+{
+    const std::string TestFolder = "test";
+    const std::string TestFilePrefix = "/test9";
+    const std::string testFile = TestFolder + TestFilePrefix;
+
+    YarnRunnerConsole yarn;
+
+    const Yarn::Instruction& inst = yarn.vm.currentInstruction();
+    yarn.vm.processInstruction(inst);
+
+    while (yarn.vm.runningState == Yarn::YarnVM::RUNNING)
     {
-        m.processInstruction(m.currentInstruction());
+        yarn.vm.processInstruction(yarn.vm.currentInstruction());
     }
 
-    m.logVariables(std::cout);
-
-    nlohmann::json serialized = m.toJS();
-
-    std::ofstream outJS("YarnVMSerialized.json");
-
-    outJS << std::setw(4) <<  serialized;
-
-    outJS.close();
+    yarn.vm.logVariables(std::cout);
 
 }
 

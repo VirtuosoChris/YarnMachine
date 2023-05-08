@@ -12,6 +12,7 @@ generated/yarn_spinner.pb.h
 )
 
 target_include_directories(YarnMachineLib PUBLIC ./install/include)
+target_include_directories(YarnMachineLib PUBLIC ./depends)
 target_include_directories(YarnMachineLib PUBLIC ./generated)
 
 target_link_directories(YarnMachineLib PUBLIC ./install/lib)
