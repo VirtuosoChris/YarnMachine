@@ -11,6 +11,10 @@ title: Start
 
 Companion: Hi there {$Player}! What do you feel like doing today?
 
+Player: I'm thinking, wait literally 2 seconds.
+
+<<wait 2000>>
+
 -> Player: Well, {$Player2}, I woke up today and said, {$Player}, I want to go swimming.
     Companion: Okay, let's go swimming.
     Companion: Where do you want to swim? #keyline

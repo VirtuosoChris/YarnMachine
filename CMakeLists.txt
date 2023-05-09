@@ -10,6 +10,8 @@ yarn.h
 yarn.cpp
 yarn_instructions.cpp
 yarn_util.cpp
+yarn_util.h
+yarn_line_database.h
 generated/yarn_spinner.pb.cc
 generated/yarn_spinner.pb.h
 )

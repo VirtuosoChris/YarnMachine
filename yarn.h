@@ -66,7 +66,7 @@ struct YarnVM
 
 
     typedef std::function<void(void)> YarnCallback;
-    typedef std::function<Yarn::Operand(YarnVM& yarn, int parameterCount)> YarnFunction; ///\todo arguments
+    typedef std::function<Yarn::Operand(YarnVM& yarn, int parameterCount)> YarnFunction;
     typedef std::vector<Option> OptionsList;
 
     /// Current State of the VM
@@ -105,8 +105,8 @@ struct YarnVM
 
     Settings settings;
 
-    long long time;
-    long long waitUntilTime;
+    long long time = 0;
+    long long waitUntilTime = 0;
 
     // --- the following members are not directly serializable but store some derived properties
 
@@ -120,13 +120,9 @@ struct YarnVM
 
     YarnCallbacks callbacks;
 
-    void setTime(long long timeIn);
+    // --- Public method interface below.  Called by your Dialogue Runner class which owns this VM ---
 
-    void incrementTime(long long dt) { setTime(time + dt); }
-
-    void waitUntil(long long t) { waitUntilTime = t; runningState = RunningState::ASLEEP; }
-
-    void setWaitTime(long long t) { waitUntil(time + t); }
+    YarnVM(const Settings& setts = {});
 
 #ifdef YARN_SERIALIZATION_JSON
 
@@ -136,15 +132,21 @@ struct YarnVM
 
 #endif
 
+    bool loadNode(const std::string& node);
+
+    bool loadProgram(std::istream& is);
+
+    void setTime(long long timeIn);
+
+    void incrementTime(long long dt) { setTime(time + dt); }
+
+    void waitUntil(long long t) { waitUntilTime = t; runningState = RunningState::ASLEEP; }
+
+    void setWaitTime(long long t) { waitUntil(time + t); }
+
     void selectOption(const Option& option);
 
     void selectOption(int selection);
-
-    std::string get_string_operand(const Yarn::Instruction& instruction, int index);
-
-    bool get_bool_operand(const Yarn::Instruction& instruction, int index);
-
-    float get_float_operand(const Yarn::Instruction& instruction, int index);
 
     void processInstruction(const Yarn::Instruction& instruction);
 
@@ -154,48 +156,16 @@ struct YarnVM
 
     const Yarn::Instruction& advance(); ///< advance the instruction pointer and return the next instruction
 
-    bool loadProgram(std::istream& is)
-    {
-        bool parsed = program.ParseFromIstream(&is);
-
-        ///\todo set variable storage
-
-        this->variableStorage = std::unordered_map<std::string, Yarn::Operand>(program.initial_values().begin(), program.initial_values().end());
-
-        return parsed;
-    }
-
     unsigned int visitedCount(const std::string& node);
+
+    protected:
 
     void populateFuncs();
 
-    YarnVM(const Settings& setts = {})
-        :
-        settings(setts),
-        generator(setts.randomSeed)
-    {
-        populateFuncs();
+    std::string get_string_operand(const Yarn::Instruction& instruction, int index);
 
-        GOOGLE_PROTOBUF_VERIFY_VERSION;
-    }
+    bool get_bool_operand(const Yarn::Instruction& instruction, int index);
 
-    bool loadNode(const std::string& node)
-    {
-        // node not found check
-        if (program.nodes().find(node) == program.nodes().end())
-        {
-            YARN_EXCEPTION("loadNode() failure : node not found : " + node);
-            return false;
-        }
-
-        const Yarn::Node& nodeRef = program.nodes().at(node);
-
-        currentNode = &nodeRef;
-        instructionPointer = 0;
-
-        callbacks.onChangeNode();
-
-        return true;
-    }
+    float get_float_operand(const Yarn::Instruction& instruction, int index);
 };
 }

@@ -175,7 +175,7 @@ float YarnVM::get_float_operand(const Yarn::Instruction& instruction, int index)
 
 const Yarn::Instruction& YarnVM::advance()
 {
-    if (runningState != RUNNING)
+    if (runningState == STOPPED)
     {
         YARN_EXCEPTION("advance() called for next instruction when program is stopped");
     }
@@ -782,4 +782,43 @@ void YarnVM::setInstruction(std::int32_t instruction)
     }
 
     instructionPointer = instruction;
+}
+
+
+YarnVM::YarnVM(const YarnVM::Settings& setts)
+    :
+    settings(setts),
+    generator(setts.randomSeed)
+{
+    populateFuncs();
+
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+}
+
+bool YarnVM::loadNode(const std::string& node)
+{
+    // node not found check
+    if (program.nodes().find(node) == program.nodes().end())
+    {
+        YARN_EXCEPTION("loadNode() failure : node not found : " + node);
+        return false;
+    }
+
+    const Yarn::Node& nodeRef = program.nodes().at(node);
+
+    currentNode = &nodeRef;
+    instructionPointer = 0;
+
+    callbacks.onChangeNode();
+
+    return true;
+}
+
+bool YarnVM::loadProgram(std::istream& is)
+{
+    bool parsed = program.ParseFromIstream(&is);
+
+    this->variableStorage = std::unordered_map<std::string, Yarn::Operand>(program.initial_values().begin(), program.initial_values().end());
+
+    return parsed;
 }

@@ -201,9 +201,21 @@ struct YarnRunnerConsole
         const Yarn::Instruction& inst = vm.currentInstruction();
         vm.processInstruction(inst);
 
+        auto time = std::chrono::steady_clock::now();
+
         while (true)
         {
             // update the time
+            auto time2 = std::chrono::steady_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(time2 - time);
+            
+            long long dt = duration.count();
+
+            if (dt)
+            {
+                vm.incrementTime(dt);
+                time = time2;
+            }
 
             switch (vm.runningState)
             {
@@ -216,7 +228,6 @@ struct YarnRunnerConsole
                 return;
             }
         }
-
     }
 
 };
