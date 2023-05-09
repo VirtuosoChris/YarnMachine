@@ -1,0 +1,19 @@
+title: Start
+---
+
+
+<<declare $gender = "" as string>>
+
+Choose your gender!
+-> m
+    <<set $gender to "m">>
+-> f
+    <<set $gender to "f">>
+-> nb
+    <<set $gender to "nb">>
+
+
+I think [select value={$gender} m="he" f="she" nb="they" /] will be there!
+
+
+===

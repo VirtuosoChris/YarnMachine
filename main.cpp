@@ -277,9 +277,12 @@ std::ostream& logVariables(std::ostream& str, const Yarn::YarnVM& vm)
     return str;
 }
 
+#include <regex>
 
 int main(int argc, char* argv[])
 {
+
+#if 1
     std::string testFile;
 
     if (argc > 1)
@@ -302,6 +305,61 @@ int main(int argc, char* argv[])
 
     // dump variables to the console after the script runs
     logVariables(std::cout, yarn.vm);
+#else
+    // regex test
+
+    // this can be illegal [ [] ]
+    // but this needs to be handled [] [] [/]
+
+    const std::string test = "I think [select value=gender m=he f=she nb=they /] will be there!";
+
+    std::cout << test << std::endl;
+
+    // this regex finds the opening bracket, captures the attribute name, captures the entire properties string, and captures the closing bracket
+    std::regex re("\\[(\\w+)\\s+([^\\/\\]]*)(\\/?\\])",
+        std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+    // second regex captures the key-value pairs
+    std::regex re2("([^\\s]+)=([^\\s]+)",
+        std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+    std::smatch match;
+
+    // we can use member function on match
+    // to extract the matched pattern.
+    if (std::regex_search(test, match, re) == true)
+    {
+        std::cout << "Match size = " << match.size() << std::endl;
+
+        for (int i = 0; i < match.size(); i++)
+        {
+            std::cout << match.str(i) << " which is captured at index " << match.position(i) << " and length " << match.str(i).length() << std::endl;
+        }
+
+        int startPos = match.position(2);
+        int length = match.str(2).length();
+        std::string_view x(&test[startPos], length);
+
+        std::string str2(x);
+
+        std::cout << "test string : " << x << std::endl;
+
+        std::smatch match2;
+
+        auto words_begin = std::regex_iterator<std::string_view::iterator>(x.begin(), x.end(), re2);
+        auto words_end = std::regex_iterator<std::string_view::iterator>();
+
+        for (std::regex_iterator i = words_begin; i != words_end; ++i)
+        {
+            std::cout << "key value of " << i->str(1) << "::" << i->str(2) << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "No match is found" << std::endl;
+    }
+
+#endif
 
 }
 
