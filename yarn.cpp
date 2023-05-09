@@ -4,6 +4,17 @@
 #include <json.hpp>
 #include <fstream>
 
+struct StaticContext
+{
+    StaticContext()
+    {
+    }
+    ~StaticContext()
+    {
+        google::protobuf::ShutdownProtobufLibrary();
+    }
+};
+
 namespace nlohmann
 {
     template<>
@@ -103,6 +114,8 @@ void YarnVM::selectOption(const Option& option)
     variableStack.push(op);
 
     currentOptionsList.clear();
+
+    assert(currentNode);
 
 #if 0
     std::int32_t translatedLabel = currentNode->labels().at(option.destination);
@@ -797,6 +810,8 @@ YarnVM::YarnVM(const YarnVM::Settings& setts)
     settings(setts),
     generator(setts.randomSeed)
 {
+    static StaticContext sc;
+
     populateFuncs();
 
     GOOGLE_PROTOBUF_VERIFY_VERSION;

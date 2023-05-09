@@ -14,7 +14,6 @@
 #define YarnException std::runtime_error
 
 #define NIL_CALLBACK [](){}
-
 #define YARN_EXCEPTION(x) if (settings.enableExceptions) { throw YarnException( x ); }
 
 namespace Yarn
@@ -22,15 +21,6 @@ namespace Yarn
 
 struct YarnVM
 {
-    /*
-    struct StaticContext
-    {
-        ~StaticContext()
-        {
-            google::protobuf::ShutdownProtobufLibrary();
-        }
-    };*/
-
     /// settings passed into constructor of YarnVM
     struct Settings
     {
@@ -163,7 +153,7 @@ struct YarnVM
 
     unsigned int visitedCount(const std::string& node);
 
-    protected:
+    protected: // internal helper methods
 
     void populateFuncs();
 

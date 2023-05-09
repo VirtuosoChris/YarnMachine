@@ -164,6 +164,7 @@ struct YarnRunnerConsole
 
         vm.callbacks.onChangeNode = [this]()
         {
+            assert(vm.currentNode);
             std::cout << "Entering node : " << vm.currentNode->name();
             if (vm.currentNode->tags_size())
             {
