@@ -116,12 +116,7 @@ struct YarnRunnerConsole
 
         vm.callbacks.onLine = [this](const Yarn::YarnVM::Line& line)
         {
-            //
-#ifdef _WIN32
-        //getch();
-#endif
-
-#if 1
+#if _DEBUG
 
             std::cout << "Running line " << line.id;
 
@@ -193,7 +188,7 @@ struct YarnRunnerConsole
             }
         };
 
-#if 1
+#if _DEBUG
         vm.callbacks.onChangeNode = [this]()
         {
             std::cout << "Entering node : " << vm.currentNode->name();
