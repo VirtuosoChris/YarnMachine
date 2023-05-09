@@ -9,6 +9,7 @@ add_library(YarnMachineLib
 yarn.h
 yarn.cpp
 yarn_instructions.cpp
+yarn_util.cpp
 generated/yarn_spinner.pb.cc
 generated/yarn_spinner.pb.h
 )

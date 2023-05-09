@@ -7,6 +7,8 @@
 
 #include <QuakeStyleConsole.h>
 
+#include "yarn_util.h"
+
 
 void beep(int count)
 {
@@ -72,57 +74,13 @@ struct YarnRunnerConsole
 
     void showLine(const Yarn::YarnVM::Line& line)
     {
-        std::stringstream sstr;
-
-        int subsRemaining = line.substitutions.size();
-
-        if (!subsRemaining)
+        if (!line.substitutions.size())
         {
             std::cout << db.lines[line.id].text << std::endl;
         }
         else
         {
-            std::string_view sv(db.lines[line.id].text);
-
-            for (int i = 0; i < sv.size(); i++)
-            {
-                if (sv[i] == '{')
-                {
-                    int arg = -1;
-                    i++;
-                    std::istringstream is(sv.data() + i);
-                    is >> arg;
-
-                    while (isdigit(sv[i]))i++;
-
-                    assert(sv[i] == '}');
-
-                    const auto& sub = line.substitutions[subsRemaining - arg - 1];
-
-                    if (sub.has_bool_value())
-                    {
-                        sstr << sub.bool_value();
-                    }
-                    else if (sub.has_float_value())
-                    {
-                        sstr << sub.float_value();
-                    }
-                    else if (sub.has_string_value())
-                    {
-                        sstr << sub.string_value();
-                    }
-                    else
-                    {
-                        assert(0 && "bad variable");
-                    }
-                }
-                else
-                {
-                    sstr << sv[i];
-                }
-            }
-
-            std::cout << sstr.str() << std::endl;
+            std::cout << Yarn::make_substitutions(db.lines[line.id].text, line.substitutions) << std::endl;
         }
     }
 
@@ -145,8 +103,6 @@ struct YarnRunnerConsole
         std::ifstream file(yarncFile, std::ios::binary | std::ios::in);
 
         bool fileOpen = file.is_open();
-
-        std::clog << "file open? : " << fileOpen << std::endl;
 
         vm.loadProgram(file);
 
@@ -190,6 +146,7 @@ struct YarnRunnerConsole
         };
 
 #if _DEBUG
+
         vm.callbacks.onChangeNode = [this]()
         {
             std::cout << "Entering node : " << vm.currentNode->name();
@@ -294,11 +251,20 @@ std::ostream& logVariables(std::ostream& str, const Yarn::YarnVM& vm)
 }
 
 
-int main(void)
+int main(int argc, char* argv[])
 {
-    const std::string TestFolder = "test";
-    const std::string TestFilePrefix = "/tests";
-    const std::string testFile = TestFolder + TestFilePrefix;
+    std::string testFile;
+
+    if (argc > 1)
+    {
+        std::cout << "Loading Yarn module " << argv[1] << std::endl;
+        testFile = argv[1];
+    }
+    else
+    {
+        std::cout << "Type name of module to run : " << std::endl;
+        std::cin >> testFile;
+    }
 
     YarnRunnerConsole yarn;
 
