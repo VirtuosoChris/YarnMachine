@@ -26,7 +26,6 @@ namespace nlohmann
             }
 
             else js = { {"value", "UNDEFINED"}, {"type", "UNDEFINED"} };
-
         }
 
         static void from_json(const json& j, Yarn::Operand& opt)
@@ -47,7 +46,6 @@ namespace nlohmann
             }
             else
             {
-                ///\todo except
             }
         }
     };
@@ -55,7 +53,7 @@ namespace nlohmann
 
 namespace Yarn
 {
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Yarn::YarnVMSettings, randomSeed, enableExceptions);
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Yarn::YarnVM::Settings, randomSeed, enableExceptions);
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Yarn::YarnVM::Line, id, substitutions);
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Yarn::YarnVM::Option, line, destination, enabled);
 }
@@ -63,12 +61,12 @@ namespace Yarn
 
 namespace Yarn
 {
-    inline void to_json(nlohmann::json& j, const Yarn::YarnStack& p)
+    inline void to_json(nlohmann::json& j, const Yarn::YarnVM::Stack& p)
     {
         j = p.to_json();
     }
 
-    inline void from_json(const nlohmann::json& j, Yarn::YarnStack& p)
+    inline void from_json(const nlohmann::json& j, Yarn::YarnVM::Stack& p)
     {
         p.from_json(j);
     }
@@ -99,11 +97,19 @@ void YarnVM::selectOption(const Option& option)
 {
     runningState = RUNNING;
 
+    Yarn::Operand op;
+    op.set_string_value(option.destination);
+    variableStack.push(op);
+
+    currentOptionsList.clear();
+
+#if 0
     std::int32_t translatedLabel = currentNode->labels().at(option.destination);
 
     currentOptionsList.resize(0);
 
     setInstruction(translatedLabel);
+#endif
 }
 
 void YarnVM::selectOption(int selection)
@@ -666,21 +672,21 @@ void YarnVM::populateFuncs()
 
 void YarnVM::fromJS(const nlohmann::json& js)
 {
-    settings = js["settings"].get<YarnVMSettings>();
+    settings = js["settings"].get<YarnVM::Settings>();
 
     const std::string& generatorStr = js["generator"].get<std::string>();
     std::istringstream sstr(generatorStr);
     sstr >> generator;
 
     variableStorage = js["variables"].get< std::unordered_map<std::string, Yarn::Operand>>();
-    variableStack = js["stack"].get<YarnStack>();
+    variableStack = js["stack"].get<YarnVM::Stack>();
     currentOptionsList = js["options"].get<OptionsList>();
-
 
     instructionPointer = js["instructionPointer"].get<std::size_t>();
     runningState = (RunningState)js["runningState"].get<int>();
 
     time = js["time"].get<long long>();
+    waitUntilTime = js["waitUntilTime"].get<long long>();
 
     ///\todo -- load the node from the node name, set the callback.
 
@@ -728,18 +734,52 @@ nlohmann::json YarnVM::toJS() const
 
     { // serialize the time
         rval["time"] = time;
+        rval["waitUntilTime"] = waitUntilTime;
     }
 
     return rval;
 }
 
-nlohmann::json Yarn::YarnStack::to_json() const
+nlohmann::json Yarn::YarnVM::Stack::to_json() const
 {
     return nlohmann::json(this->_Get_container());
 }
 
-void Yarn::YarnStack::from_json(const nlohmann::json& js)
+void Yarn::YarnVM::Stack::from_json(const nlohmann::json& js)
 {
-    this->c = js.get<YarnStack::container_type>();
+    this->c = js.get<YarnVM::Stack::container_type>();
 }
 #endif
+
+
+void YarnVM::setTime(long long timeIn)
+{
+    time = timeIn;
+
+    // check if sleep time is expired
+    if (runningState == ASLEEP && (time >= waitUntilTime)) { runningState = RUNNING; }
+}
+
+const Yarn::Instruction& YarnVM::currentInstruction()
+{
+    assert(currentNode);
+    auto instructionCtNode = currentNode->instructions_size();
+    assert(instructionCtNode > (instructionPointer));
+
+    return currentNode->instructions(instructionPointer);
+}
+
+void YarnVM::setInstruction(std::int32_t instruction)
+{
+    if (!currentNode)
+    {
+        YARN_EXCEPTION("current node is null in setInstruction()");
+    }
+
+    if (instruction >= currentNode->instructions_size())
+    {
+        YARN_EXCEPTION("Invalid instruction pointer parameter for setInstruction()");
+    }
+
+    instructionPointer = instruction;
+}

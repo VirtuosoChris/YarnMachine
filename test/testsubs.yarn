@@ -1,0 +1,37 @@
+title: Start
+---
+
+<<declare $Player = "" as string>>
+<<set $Player to "Chris">>
+
+<<declare $Player2 = "" as string>>
+<<set $Player2 to "Companion">>
+
+Companion: Hi there {$Player}! What do you feel like doing today?
+
+-> Player: Well, {$Player2}, I woke up today and said, {$Player}, I want to go swimming.
+    Companion: Okay, let's go swimming.
+    Companion: Where do you want to swim? #keyline
+    -> Player: The lake!
+        Companion: Nice! It's a great day for it.
+    -> Player: The swimming pool!
+        Companion: Oh, awesome! I heard they installed a new slide.
+    Player: Sounds good!
+    <<jump SwimmingScene>>
+-> Player: I'd prefer to go hiking.
+    Companion: Cool, we'll go hiking then.
+    Player: Sounds good!
+    <<jump HikingScene>>
+
+===
+title: HikingScene
+position: -162,-172
+Player: HIKING HIKING HIKING! IT'S SO FUN
+---
+
+===
+title: SwimmingScene
+position: 94,-171
+---
+
+===

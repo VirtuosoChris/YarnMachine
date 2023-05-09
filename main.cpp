@@ -70,6 +70,62 @@ struct YarnRunnerConsole
 
 #endif
 
+    void showLine(const Yarn::YarnVM::Line& line)
+    {
+        std::stringstream sstr;
+
+        int subsRemaining = line.substitutions.size();
+
+        if (!subsRemaining)
+        {
+            std::cout << db.lines[line.id].text << std::endl;
+        }
+        else
+        {
+            std::string_view sv(db.lines[line.id].text);
+
+            for (int i = 0; i < sv.size(); i++)
+            {
+                if (sv[i] == '{')
+                {
+                    int arg = -1;
+                    i++;
+                    std::istringstream is(sv.data() + i);
+                    is >> arg;
+
+                    while (isdigit(sv[i]))i++;
+
+                    assert(sv[i] == '}');
+
+                    const auto& sub = line.substitutions[subsRemaining - arg - 1];
+
+                    if (sub.has_bool_value())
+                    {
+                        sstr << sub.bool_value();
+                    }
+                    else if (sub.has_float_value())
+                    {
+                        sstr << sub.float_value();
+                    }
+                    else if (sub.has_string_value())
+                    {
+                        sstr << sub.string_value();
+                    }
+                    else
+                    {
+                        assert(0 && "bad variable");
+                    }
+                }
+                else
+                {
+                    sstr << sv[i];
+                }
+            }
+
+            std::cout << sstr.str() << std::endl;
+        }
+    }
+
     void loadModule(const std::string& moduleName)
     {
         const std::string testLinesCSV = moduleName + "-Lines.csv";
@@ -93,8 +149,6 @@ struct YarnRunnerConsole
         std::clog << "file open? : " << fileOpen << std::endl;
 
         vm.loadProgram(file);
-
-        //m.printNodes();
 
         auto it = vm.program.nodes().begin();
         if ((it = vm.program.nodes().find("Start")) != vm.program.nodes().end())
@@ -132,60 +186,7 @@ struct YarnRunnerConsole
             std::cout << std::endl;
 #endif
 
-            std::stringstream sstr;
-
-            int subsRemaining = line.substitutions.size();
-
-            if (!subsRemaining)
-            {
-                std::cout << db.lines[line.id].text << std::endl;
-            }
-            else
-            {
-                ///\todo major audit of this.
-
-                std::string_view sv(db.lines[line.id].text);
-
-                for (int i = 0; i < sv.size(); i++)
-                {
-                    if (sv[i] == '{')
-                    {
-                        int arg = -1;
-                        i++;
-                        std::istringstream is(sv.data() + i);
-                        is >> arg;
-
-                        while (isdigit(sv[i]))i++;
-
-                        assert(sv[i] == '}');
-
-                        const auto& sub = line.substitutions[subsRemaining - arg - 1];
-
-                        if (sub.has_bool_value())
-                        {
-                            sstr << sub.bool_value();
-                        }
-                        else if (sub.has_float_value())
-                        {
-                            sstr << sub.float_value();
-                        }
-                        else if (sub.has_string_value())
-                        {
-                            sstr << sub.string_value();
-                        }
-                        else
-                        {
-                            assert(0 && "bad variable");
-                        }
-                    }
-                    else
-                    {
-                        sstr << sv[i];
-                    }
-                }
-
-                std::cout << sstr.str() << std::endl;
-            }
+            showLine(line);
         };
 
 #if _DEBUG
@@ -219,9 +220,11 @@ struct YarnRunnerConsole
         {
             for (int i = 0; i < opts.size(); i++)
             {
-                ///\todo substitutions
-                const std::string& lineID = opts[i].line.id;
-                std::cout << '\t' << (i + 1) << ") " << db.lines[lineID].text << std::endl;
+                if (opts[i].enabled)
+                {
+                    std::cout << '\t' << (i + 1) << ") ";
+                    showLine(opts[i].line);
+                }
 
                 ///\todo input string validation
             }
@@ -232,15 +235,7 @@ struct YarnRunnerConsole
 
             lineIndex -= 1; // zero offset on cin
 
-            const Yarn::YarnVM::Option& line = opts[lineIndex];
-
-            Yarn::Operand op;
-            op.set_string_value(line.destination);
-
-            vm.variableStack.push(op);
-
-            ///\todo this doesn't belong here!
-            vm.currentOptionsList.clear();
+            vm.selectOption(lineIndex);
         };
     }
 
@@ -302,7 +297,7 @@ std::ostream& logVariables(std::ostream& str, const Yarn::YarnVM& vm)
 int main(void)
 {
     const std::string TestFolder = "test";
-    const std::string TestFilePrefix = "/test9";
+    const std::string TestFilePrefix = "/tests";
     const std::string testFile = TestFolder + TestFilePrefix;
 
     YarnRunnerConsole yarn;
