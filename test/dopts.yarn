@@ -1,0 +1,18 @@
+title: Start
+---
+
+<<declare $reputation = 0.0 as number>>
+
+Guard: You're not allowed in!
+
+-> Sure I am! The boss knows me! <<if $reputation > 10>>
+-> Please?
+
+<<set $reputation to 11.0>>
+
+Guard: You're not allowed in!
+
+-> Sure I am! The boss knows me! <<if $reputation > 10>>
+-> Please?
+
+===
