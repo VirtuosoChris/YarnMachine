@@ -7,6 +7,8 @@ title: Start
 <<declare $Player2 = "" as string>>
 <<set $Player2 to "Companion">>
 
+<<beep 2>>
+
 Companion: Hi there {$Player}! What do you feel like doing today?
 
 -> Player: Well, {$Player2}, I woke up today and said, {$Player}, I want to go swimming.

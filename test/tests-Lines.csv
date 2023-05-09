@@ -1,13 +1,13 @@
 id,text,file,node,lineNumber
-line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-0,Companion: Hi there {0}! What do you feel like doing today?,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,10
-line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-1,"Player: Well, {0}, I woke up today and said, {1}, I want to go swimming.",C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,12
-line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-2,"Companion: Okay, let's go swimming.",C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,13
-line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-3,Companion: Where do you want to swim?,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,14
-line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-4,Player: The lake!,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,15
-line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-5,Companion: Nice! It's a great day for it.,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,16
-line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-6,Player: The swimming pool!,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,17
-line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-7,"Companion: Oh, awesome! I heard they installed a new slide.",C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,18
-line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-8,Player: Sounds good!,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,19
-line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-9,Player: I'd prefer to go hiking.,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,21
-line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-10,"Companion: Cool, we'll go hiking then.",C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,22
-line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-11,Player: Sounds good!,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,23
+line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-0,Companion: Hi there {0}! What do you feel like doing today?,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,12
+line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-1,"Player: Well, {0}, I woke up today and said, {1}, I want to go swimming.",C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,14
+line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-2,"Companion: Okay, let's go swimming.",C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,15
+line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-3,Companion: Where do you want to swim?,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,16
+line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-4,Player: The lake!,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,17
+line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-5,Companion: Nice! It's a great day for it.,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,18
+line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-6,Player: The swimming pool!,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,19
+line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-7,"Companion: Oh, awesome! I heard they installed a new slide.",C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,20
+line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-8,Player: Sounds good!,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,21
+line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-9,Player: I'd prefer to go hiking.,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,23
+line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-10,"Companion: Cool, we'll go hiking then.",C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,24
+line:C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn-Start-11,Player: Sounds good!,C:\Users\chris\GitHub\YarnMachine\test\testsubs.yarn,Start,25

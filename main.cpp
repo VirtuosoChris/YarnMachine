@@ -12,7 +12,7 @@ void beep(int count)
 {
     for (int i = 0; i < count; i++)
     {
-        std::cerr << '\a';
+        std::cerr << "Beep!\a\n";
     }
 }
 
@@ -165,7 +165,7 @@ struct YarnRunnerConsole
         {
             std::cout << "command : " << command << std::endl;
 
-            this->commands.commandExecute(std::cin, std::cout);
+            this->commands.commandExecute(command, std::cout);
         };
 
         vm.callbacks.onLine = [this](const Yarn::YarnVM::Line& line)
