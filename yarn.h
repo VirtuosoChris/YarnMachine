@@ -16,6 +16,13 @@
 #define NIL_CALLBACK [](){}
 #define YARN_EXCEPTION(x) if (settings.enableExceptions) { throw YarnException( x ); }
 
+/// A yarn virtual machine intended to be used with a custom Yarn Dialogue runner.
+/// This runs a .yarnc file of path provided to the loadProgram() method
+/// it has callbacks for different events, such as running a line, running a command, changing nodes, showing options, etc.
+/// Binding callbacks, custom functions, and game commands to the function tables are the responsibility of the client code
+/// pumping the instruction queue is the responsibility of the client code
+/// See the public interface / members below and the included demo console dialogue runner program for more
+/// The VM has built in json (de)serialization methods
 namespace Yarn
 {
 
@@ -131,13 +138,13 @@ struct YarnVM
 
     bool loadProgram(const std::string& is);
 
-    void setTime(long long timeIn);
+    void setTime(long long timeIn); ///< for the built in "wait" command.  units are up to the dialogue runner and script
 
     void incrementTime(long long dt) { setTime(time + dt); }
 
-    void waitUntil(long long t) { waitUntilTime = t; runningState = RunningState::ASLEEP; }
+    void waitUntil(long long t) { waitUntilTime = t; runningState = RunningState::ASLEEP; } ///< for the built in "wait" command.  units are up to the dialogue runner and script
 
-    void setWaitTime(long long t) { waitUntil(time + t); }
+    void setWaitTime(long long t) { waitUntil(time + t); } ///< for the built in "wait" command.  units are up to the dialogue runner and script
 
     void selectOption(const Option& option);
 
@@ -151,7 +158,7 @@ struct YarnVM
 
     const Yarn::Instruction& advance(); ///< advance the instruction pointer and return the next instruction
 
-    unsigned int visitedCount(const std::string& node);
+    unsigned int visitedCount(const std::string& node); ///< how many times has a node been entered/exited during execution
 
     protected: // internal helper methods
 
