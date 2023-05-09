@@ -108,17 +108,19 @@ struct YarnVM
     long long time = 0;
     long long waitUntilTime = 0;
 
+    std::string yarncFile;
+
     // --- the following members are not directly serializable but store some derived properties
 
-    Yarn::Program program;
     const Yarn::Node* currentNode = nullptr;
 
     // --- The following members are NOT part of the serializable state! ---
     // c++ callbacks and function tables are to be populated directly by the client / game code
+    // the program is derived from the yarnc filename in the deserialization function
 
     std::unordered_map<std::string, YarnFunction> functions;
-
     YarnCallbacks callbacks;
+    Yarn::Program program;
 
     // --- Public method interface below.  Called by your Dialogue Runner class which owns this VM ---
 
@@ -126,6 +128,9 @@ struct YarnVM
 
 #ifdef YARN_SERIALIZATION_JSON
 
+    /// deserializes the static state of the VM from a json input.
+    /// loads the node, which causes the node change callback to fire
+    /// if we were in an awaiting input state, we fire the callback to present options
     void fromJS(const nlohmann::json& js);
 
     nlohmann::json toJS() const;
@@ -134,7 +139,7 @@ struct YarnVM
 
     bool loadNode(const std::string& node);
 
-    bool loadProgram(std::istream& is);
+    bool loadProgram(const std::string& is);
 
     void setTime(long long timeIn);
 

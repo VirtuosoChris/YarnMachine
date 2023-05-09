@@ -34,6 +34,8 @@ struct YarnRunnerConsole
     Yarn::YarnVM vm;
     Virtuoso::QuakeStyleConsole commands; ///< Use a c++ quake style console as a command parser / command provider
 
+    std::string moduleName;
+
     YarnRunnerConsole()
     {
         setCallbacks();
@@ -54,20 +56,29 @@ struct YarnRunnerConsole
 #ifdef YARN_SERIALIZATION_JSON
     void save(const std::string& saveFile = "YarnVMSerialized.json")
     {
-        nlohmann::json serialized = vm.toJS();
+        nlohmann::json serialized;
+
+        serialized["vm"] = vm.toJS();
+        serialized["moduleName"] = moduleName;
 
         std::ofstream outJS(saveFile);
 
         outJS << std::setw(4) << serialized;
 
         outJS.close();
-
-        ///\todo
     }
 
     void restore(const std::string& restoreFile = "YarnVMSerialized.json")
     {
-        ///\todo
+        std::ifstream inJS(restoreFile);
+
+        nlohmann::json js = nlohmann::json::parse(inJS);
+
+        loadModuleLineDB(js["moduleName"].get<std::string>());
+
+        vm.fromJS(js["vm"]);
+
+        inJS.close();
     }
 
 #endif
@@ -84,11 +95,10 @@ struct YarnRunnerConsole
         }
     }
 
-    void loadModule(const std::string& moduleName)
+    void loadModuleLineDB(const std::string& moduleName)
     {
         const std::string testLinesCSV = moduleName + "-Lines.csv";
         const std::string testMetaCSV = moduleName + "-Metadata.csv";
-        const std::string yarncFile = moduleName + ".yarnc";
 
         db.loadLines(testLinesCSV);
         db.loadMetadata(testMetaCSV);
@@ -99,19 +109,24 @@ struct YarnRunnerConsole
         std::cout << "Line database size (bytes) : " << db.sizeBytes() << std::endl;
         std::cout << "Time spent in parsing (ms) : " << db.parsingTime << std::endl;
 #endif
+    }
 
-        std::ifstream file(yarncFile, std::ios::binary | std::ios::in);
+    void loadModule(const std::string& mod, const std::string& startNode = "Start")
+    {
+        moduleName = mod;
 
-        bool fileOpen = file.is_open();
+        const std::string yarncFile = moduleName + ".yarnc";
 
-        vm.loadProgram(file);
+        loadModuleLineDB(mod);
+        vm.loadProgram(yarncFile);
 
+        // find the start node
         auto it = vm.program.nodes().begin();
-        if ((it = vm.program.nodes().find("Start")) != vm.program.nodes().end())
+        if ((it = vm.program.nodes().find(startNode)) != vm.program.nodes().end())
         {
             const Yarn::Node& startnode = it->second;
 
-            vm.loadNode("Start");
+            vm.loadNode(startNode);
         }
     }
 
@@ -183,7 +198,7 @@ struct YarnRunnerConsole
                     showLine(opts[i].line);
                 }
 
-                ///\todo input string validation
+                /// -- should actually do input string validation.  won't be using a cin input irl, so nbd for now
             }
 
             int lineIndex = 0;

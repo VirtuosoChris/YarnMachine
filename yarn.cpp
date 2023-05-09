@@ -2,6 +2,7 @@
 
 #ifdef YARN_SERIALIZATION_JSON
 #include <json.hpp>
+#include <fstream>
 
 namespace nlohmann
 {
@@ -682,15 +683,19 @@ void YarnVM::fromJS(const nlohmann::json& js)
     variableStack = js["stack"].get<YarnVM::Stack>();
     currentOptionsList = js["options"].get<OptionsList>();
 
-    instructionPointer = js["instructionPointer"].get<std::size_t>();
-    runningState = (RunningState)js["runningState"].get<int>();
-
     time = js["time"].get<long long>();
     waitUntilTime = js["waitUntilTime"].get<long long>();
 
-    ///\todo -- load the node from the node name, set the callback.
+    this->loadProgram(js["yarncFile"].get<std::string>());
+    this->loadNode(js["currentNode"]);
 
-    ///\todo load the program and database from input URI
+    instructionPointer = js["instructionPointer"].get<std::size_t>();
+    runningState = (RunningState)js["runningState"].get<int>();
+
+    if (this->runningState == AWAITING_INPUT)
+    {
+        this->callbacks.onShowOptions(this->currentOptionsList);
+    }
 }
 
 nlohmann::json YarnVM::toJS() const
@@ -730,6 +735,8 @@ nlohmann::json YarnVM::toJS() const
         rval["instructionPointer"] = instructionPointer;
 
         rval["runningState"] = (int)runningState;
+
+        rval["yarncFile"] = this->yarncFile;
     }
 
     { // serialize the time
@@ -814,8 +821,15 @@ bool YarnVM::loadNode(const std::string& node)
     return true;
 }
 
-bool YarnVM::loadProgram(std::istream& is)
+
+bool YarnVM::loadProgram(const std::string& yarncFileIn)
 {
+    yarncFile = yarncFileIn;
+   
+    std::ifstream is(yarncFile, std::ios::binary | std::ios::in);
+
+    assert(is.is_open());
+
     bool parsed = program.ParseFromIstream(&is);
 
     this->variableStorage = std::unordered_map<std::string, Yarn::Operand>(program.initial_values().begin(), program.initial_values().end());
