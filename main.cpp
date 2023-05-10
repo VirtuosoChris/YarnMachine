@@ -279,10 +279,125 @@ std::ostream& logVariables(std::ostream& str, const Yarn::YarnVM& vm)
 
 #include <regex>
 
+struct Attribute
+{
+    enum AttribType {NONE=0, OPEN=1, CLOSE=2, SELF_CLOSING=3, CLOSE_ALL=4};
+
+    std::string name;
+    std::unordered_map<std::string_view, std::string_view> properties;
+    AttribType type = NONE;
+
+    std::size_t position = 0;
+    std::size_t length = 0;
+
+    /*bool operator<(const Attribute& attrib)
+    {
+
+    }*/
+};
+
+struct LineAttributes
+{
+    std::vector<Attribute> attribs;
+
+    void parse(const std::string_view& line)
+    {
+        // -- regex reference :: https://cplusplus.com/reference/regex/ECMAScript/ --
+        // since regexes are horrible you can test that they work here : https://regex101.com/
+
+        // this regex finds the opening bracket, captures the attribute name, captures the entire properties string, and captures the closing bracket
+        //std::regex re("\\[(\\w+)\\s+([^\\/\\]]*)(\\/?\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
+        //\\[\\s*\\/\\s*\\]|
+        std::regex re("\\[(\\w*)\\s*([^\\/\\]]*)(\\/?\\s*(\\w*)\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+        // second regex captures the key-value pairs
+        std::regex re2("([^\\s]+)=([^\\s]+)", std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+        auto words_begin = std::regex_iterator<std::string_view::iterator>(line.begin(), line.end(), re);
+        auto words_end = std::regex_iterator<std::string_view::iterator>();
+
+        for (std::regex_iterator i = words_begin; i != words_end; ++i)
+        {
+            // std::cout << "processing attrib section" << std::endl;
+
+            attribs.push_back(Attribute{});
+            Attribute& attr = attribs.back();
+
+            auto match = *i;
+
+            attr.position = match.position(0);
+            attr.length = match.str(0).length();
+
+            //std::cout << "Match size is " << match.size() << std::endl;
+
+            if ((match.size() > 1) && match.str(1).length())
+            {
+                attr.name = match.str(1);
+            }
+
+            //index 2 is the properties string
+
+            // index 3 is close tag
+            if (match.size() > 3)
+            {
+                if (match.str(3).length() == 1) // we just have a ] at the end, no /]
+                {
+                    attr.type = attr.OPEN;
+
+                    //std::cout << "opening attrib " << attr.name << std::endl;
+                }
+                else if  (match.str(3).length() > 1) // we have a / and maybe an attrib name before the ]
+                {
+                    assert(attr.NONE == attr.type);
+
+                    // index 4 is attrib we're closing
+                    if (match.size() > 4 && (match.str(4).length()))
+                    {
+                        assert(attr.name.size() == 0);
+
+                        attr.name = match.str(4);
+
+                        // if there's no attribute named with a /, then we are closing all
+                        //attr.type = attr.name.size() ? attr.CLOSE : attr.CLOSE_ALL;
+
+                        attr.type = attr.CLOSE;
+
+                        // if (attr.type == attr.CLOSE) std::cout << "Closing attribute " << attr.name << std::endl;
+                        //
+                        // else
+                        //    std::cout << "Closing all attributes " << std::endl;
+                    }
+                    else // here we have a / but no text before the ]
+                    {
+                        if (attr.name.size())
+                        {
+                            attr.type = attr.SELF_CLOSING;
+                            //std::cout << "self closing attribute " << std::endl;
+                        }
+                        else
+                        {
+                            attr.type = attr.CLOSE_ALL;
+                            //std::cout << "Closing all attributes " << std::endl;
+                        }
+                    }
+                }
+            }
+
+            //for (int i = 0; i < match.size(); i++)
+            //{
+            //    std::cout << '\t' << match.str(i) << " which is captured at index " << match.position(i) << " and length " << match.str(i).length() << std::endl;
+            //}
+
+            assert(attr.type != attr.NONE);
+        }
+    }
+};
+
+
 int main(int argc, char* argv[])
 {
 
-#if 1
+#if 0
     std::string testFile;
 
     if (argc > 1)
@@ -311,18 +426,19 @@ int main(int argc, char* argv[])
     // this can be illegal [ [] ]
     // but this needs to be handled [] [] [/]
 
-    const std::string test = "I think [select value=gender m=he f=she nb=they /] will be there!";
+    const std::string test = "I think [select value=gender m=he f=she nb=they /] will be there!  [wave][bounce]Hello![/ bounce][ / ]";
+    const std::string test2 = "Oh, [wave]hello[bounce]there![/ bounce][/ wave]"; // test nested attributes
+    const std::string test3 = "[wave][bounce]Hello![/]"; // close all.
+    const std::string test4 = "[wave = 2]Wavy![/ wave]";
+    const std::string test5 = "[mood = \"angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]
 
-    std::cout << test << std::endl;
+    LineAttributes attr;
+    attr.parse(test);
 
-    // this regex finds the opening bracket, captures the attribute name, captures the entire properties string, and captures the closing bracket
-    std::regex re("\\[(\\w+)\\s+([^\\/\\]]*)(\\/?\\])",
-        std::regex_constants::ECMAScript | std::regex_constants::icase);
+    // character attribute
 
-    // second regex captures the key-value pairs
-    std::regex re2("([^\\s]+)=([^\\s]+)",
-        std::regex_constants::ECMAScript | std::regex_constants::icase);
-
+//    std::cout << test << std::endl;
+#if 0
     std::smatch match;
 
     // we can use member function on match
@@ -340,12 +456,6 @@ int main(int argc, char* argv[])
         int length = match.str(2).length();
         std::string_view x(&test[startPos], length);
 
-        std::string str2(x);
-
-        std::cout << "test string : " << x << std::endl;
-
-        std::smatch match2;
-
         auto words_begin = std::regex_iterator<std::string_view::iterator>(x.begin(), x.end(), re2);
         auto words_end = std::regex_iterator<std::string_view::iterator>();
 
@@ -358,6 +468,7 @@ int main(int argc, char* argv[])
     {
         std::cout << "No match is found" << std::endl;
     }
+#endif
 
 #endif
 
