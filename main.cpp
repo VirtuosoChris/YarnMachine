@@ -336,7 +336,7 @@ struct LineAttributes
         // we look for the attrib name at the beginning, any contiguous sequence of alnum
         //std::regex re("\\[[\\s]*([\\w|\\d]*)\\s*([^\\/\\]]*)(\\/?\\s*(\\w*)\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
 
-        std::regex re("\\[[\\s]*([\\w|\\d]*)\\s*(=\\s*[^\\s^\\/^\\]]+)?([^\\/\\]]*)(\\/?\\s*(\\w*)\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
+        std::regex re("\\[[\\s]*([\\w|\\d]*)\\s*(=\\s*(?:\"(?:[^\"]+)\"|[^\\s|\"]+))?([^\\/\\]]*)(\\/?\\s*(\\w*)\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
 
         //xx std::regex   re("\\[[\\s]*([\\w|\\d]*)\\s*[=][\\s]*[^\\s]*([^\\/\\]]*)(\\/?\\s*(\\w*)\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
 
@@ -472,14 +472,15 @@ int main(int argc, char* argv[])
     const std::string test = "I think [select value=gender m=he f=she nb=they /] will be there!  [wave][bounce]Hello![/ bounce][ / ]";
     const std::string test2 = "Oh, [wave]hello[bounce]there![/ bounce][/ wave]"; // test nested attributes
     const std::string test3 = "[wave][bounce]Hello![/]"; // close all.
-    const std::string test4 = "[wave = 2]Wavy![/ wave]";
+    const std::string test4 = "[wave = 2 otherprop = 5.0]Wavy![/ wave]";
     const std::string test5 = "[mood mood = \"angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]
     const std::string test6 = "[mood mood = \"superduper angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]
+    const std::string test7 = "[mood = \"superduper angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]
 
-    // passing : test test2 test3 test4 test5 test6
+    // passing : test test2 test3 test4 test5 test6 test7
 
     LineAttributes attr;
-    attr.parse(test6);
+    attr.parse(test);
 
     // character attribute
 
