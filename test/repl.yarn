@@ -1,8 +1,9 @@
 title: Start
 ---
 
-
 <<declare $gender = "" as string>>
+<<declare $pie_count =1 as number>>
+<<declare $race_position = 5 as number>>
 
 Choose your gender!
 -> m
@@ -15,5 +16,8 @@ Choose your gender!
 
 I think [select value={$gender} m="he" f="she" nb="they" /] will be there!
 
+PieMaker: I just baked [plural value={$pie_count} one="a pie" other="% pies" /], wowzer!
+
+Runner: The race is over! I came in [ordinal value={$race_position} one="%st" two="%nd" few="%rd" other="%th" /] place!
 
 ===

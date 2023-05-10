@@ -1,0 +1,8 @@
+id,text,file,node,lineNumber
+line:C:\Users\chris\GitHub\YarnMachine\test\repl.yarn-Start-0,Choose your gender!,C:\Users\chris\GitHub\YarnMachine\test\repl.yarn,Start,8
+line:C:\Users\chris\GitHub\YarnMachine\test\repl.yarn-Start-1,m,C:\Users\chris\GitHub\YarnMachine\test\repl.yarn,Start,9
+line:C:\Users\chris\GitHub\YarnMachine\test\repl.yarn-Start-2,f,C:\Users\chris\GitHub\YarnMachine\test\repl.yarn,Start,11
+line:C:\Users\chris\GitHub\YarnMachine\test\repl.yarn-Start-3,nb,C:\Users\chris\GitHub\YarnMachine\test\repl.yarn,Start,13
+line:C:\Users\chris\GitHub\YarnMachine\test\repl.yarn-Start-4,"I think [select value={0} m=""he"" f=""she"" nb=""they"" /] will be there!",C:\Users\chris\GitHub\YarnMachine\test\repl.yarn,Start,17
+line:C:\Users\chris\GitHub\YarnMachine\test\repl.yarn-Start-5,"PieMaker: I just baked [plural value={0} one=""a pie"" other=""% pies"" /], wowzer!",C:\Users\chris\GitHub\YarnMachine\test\repl.yarn,Start,19
+line:C:\Users\chris\GitHub\YarnMachine\test\repl.yarn-Start-6,"Runner: The race is over! I came in [ordinal value={0} one=""%st"" two=""%nd"" few=""%rd"" other=""%th"" /] place!",C:\Users\chris\GitHub\YarnMachine\test\repl.yarn,Start,21

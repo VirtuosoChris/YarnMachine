@@ -9,6 +9,8 @@
 
 #include "yarn_util.h"
 
+#include "yarn_markup.h"
+
 
 void beep(int count)
 {
@@ -276,197 +278,101 @@ std::ostream& logVariables(std::ostream& str, const Yarn::YarnVM& vm)
     return str;
 }
 
-#include <regex>
-
-struct Attribute
+void emit(std::ostream& str, const std::string_view& line, std::size_t begin, std::size_t end)
 {
-    enum AttribType {NONE=0, OPEN=1, CLOSE=2, SELF_CLOSING=3, CLOSE_ALL=4};
+    assert(end > begin);
+    str << line.substr(begin, end - begin);
+}
 
-    std::string name;
-    std::unordered_map<std::string, std::string> properties;
-    AttribType type = NONE;
-
-    std::size_t position = 0;
-    std::size_t length = 0;
-
-    /*bool operator<(const Attribute& attrib)
-    {
-
-    }*/
-};
-
-struct LineAttributes
+std::string_view varName(const std::string& value)
 {
-    std::vector<Attribute> attribs;
+    std::size_t open = value.find_first_of('{') + 1;
+    std::size_t length = value.find_first_of('}') - open;
 
-    static void parseProperties(Attribute& attr, const std::string_view& x)
+    if ((open == std::string::npos) || (length == std::string::npos) || !length)
     {
-        std::cout << "parsing properties out of " << x << std::endl;
+        throw YarnException("Malformed variable name in value property for select markup");
+    }
 
-        // second regex captures the key-value pairs
-        // std::regex re2("([^\\s]+)\\s*=\\s*\"?([^\\s|\"]+)", std::regex_constants::ECMAScript | std::regex_constants::icase);
+    return std::string_view(&value[open], length);
+}
 
-        std::regex re2("([^\\s]+)\\s*=\\s*(\"([^\"]+)\"|[^\\s|\"]+)", std::regex_constants::ECMAScript | std::regex_constants::icase);
+void handleAttrib(std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
+{
+    if (attrib.name == "select")
+    {
+        //const std::string& value = attrib.properties["value"].c_str();
 
-        auto words_begin = std::regex_iterator<std::string_view::iterator>(x.begin(), x.end(), re2);
-        auto words_end = std::regex_iterator<std::string_view::iterator>();
+        auto it = attrib.properties.find("value");
 
-        for (std::regex_iterator i = words_begin; i != words_end; ++i)
+        if (it != attrib.properties.end())
         {
-            int valueIndex = i->str(3).length() ? 3 : 2;
+            const std::string& value = it->second;
 
-            std::cout << "key value of " << i->str(1) << "::" << i->str(valueIndex) << std::endl;
+            //std::cout << value << std::endl;
 
-            attr.properties[i->str(1)] = i->str(valueIndex);
+            std::string_view variableName = varName(value);
 
-            if (attr.name.length() == 0)
+            std::cout << variableName << " from " << value << std::endl;
+
+        }
+        else
+        {
+            // value not found
+        }
+    }
+}
+
+void processLine(const std::string_view& line, const Yarn::Markup::LineAttributes& attribs)
+{
+    std::stringstream sstr;
+
+    std::size_t cursorIndex = 0;
+    auto nextAttrib = attribs.attribs.begin();
+
+    while (cursorIndex < line.length())
+    {
+        if (nextAttrib == attribs.attribs.end())
+        {
+            std::cout << "ran out of attribs!";
+            emit(sstr, line, cursorIndex, line.size());
+        }
+        else
+        {
+            std::size_t al = nextAttrib->length;
+            std::size_t ap = nextAttrib->position;
+
+            if (ap - cursorIndex)
             {
-                attr.name = i->str(1);
-                std::cout << "Defaulting attribute name to " << attr.name << std::endl;
+                emit(sstr, line, cursorIndex, ap);
             }
+
+            assert(al);
+            if (al)
+            {
+                handleAttrib(sstr, line, *nextAttrib);
+
+                //std::cout << "\tHandling attrib :";
+                //emit(sstr, line, ap, ap + al);
+            }
+
+            // handle attrib;
+            assert((al + ap) > cursorIndex);
+            cursorIndex = al + ap; // advance cursor to after the attribute we just handled
+
+            nextAttrib++;
         }
     }
 
-    void parseCharacter(const char* line)
-    {
-        std::regex re("([^:]+):[\\s]*", std::regex_constants::ECMAScript | std::regex_constants::icase);
 
-        std::cmatch cm;
-        if (std::regex_search(line, cm, re))
-        {
-            //std::cout << cm.str(1) << std::endl;
-
-            this->attribs.push_back({});
-
-            auto& attr = this->attribs.back();
-
-            attr.type = Attribute::SELF_CLOSING;
-            attr.name = "character";
-            attr.properties["name"] = cm.str(1);
-            attr.length = cm.str(0).length();
-            attr.position = 0;
-
-            assert(cm.position(0) == 0);
-        }
-
-    }
-
-    void parse(const std::string_view& line)
-    {
-        // -- regex reference :: https://cplusplus.com/reference/regex/ECMAScript/ --
-        // since regexes are horrible you can test that they work here : https://regex101.com/
-
-        // this regex finds the opening bracket, captures the attribute name, captures the entire properties string, and captures the closing bracket
-        // we look for the attrib name at the beginning, any contiguous sequence of alnum
-
-        parseCharacter(line.data());
-
-        std::regex re("\\[[\\s]*([\\w|\\d]*)\\s*(=\\s*(?:\"(?:[^\"]+)\"|[^\\s|\"]+))?([^\\/\\]]*)(\\/?\\s*(\\w*)\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
-
-        auto words_begin = std::regex_iterator<std::string_view::iterator>(line.begin(), line.end(), re);
-        auto words_end = std::regex_iterator<std::string_view::iterator>();
-
-        for (std::regex_iterator i = words_begin; i != words_end; ++i)
-        {
-            //std::cout << "processing attrib section" << std::endl;
-
-            attribs.push_back(Attribute{});
-            Attribute& attr = attribs.back();
-
-            auto match = *i;
-
-            for (int i = 0; i < match.size(); i++)
-            {
-                std::cout << '\t' << match.str(i) << " which is captured at index " << match.position(i) << " and length " << match.str(i).length() << std::endl;
-            }
-
-            attr.position = match.position(0);
-            attr.length = match.str(0).length();
-
-            //std::cout << "Match size is " << match.size() << std::endl;
-
-            if ((match.size() > 1) && match.str(1).length())
-            {
-                attr.name = match.str(1);
-            }
-
-            // the optional shorthand one eg for [bounce=2] instead of [bounce bounce=2]
-            if ((match.size() > 2) && match.str(2).length())
-            {
-                assert(attr.name.size());
-
-                std::string tmp = attr.name + match.str(2);
-
-                parseProperties(attr, tmp);
-            }
-
-            //index 3 is the properties string
-            if ((match.size() > 3) && match.str(3).length())
-            {
-                int startPos = match.position(3);
-                int length = match.str(3).length();
-                std::string_view x(&line[startPos], length);
-
-                parseProperties(attr, x);
-            }
-
-            // index 4 is close tag
-            if (match.size() > 4)
-            {
-                if (match.str(4).length() == 1) // we just have a ] at the end, no /]
-                {
-                    attr.type = attr.OPEN;
-
-                    std::cout << "opening attrib " << attr.name << std::endl;
-                }
-                else if  (match.str(4).length() > 1) // we have a / and maybe an attrib name before the ]
-                {
-                    assert(attr.NONE == attr.type);
-
-                    // index 5 is attrib we're closing
-                    if (match.size() > 5 && (match.str(5).length()))
-                    {
-                        assert(attr.name.size() == 0);
-
-                        attr.name = match.str(5);
-
-                        // if there's no attribute named with a /, then we are closing all
-                        //attr.type = attr.name.size() ? attr.CLOSE : attr.CLOSE_ALL;
-
-                        attr.type = attr.CLOSE;
-
-                        std::cout << "Closing attribute " << attr.name << std::endl;
-
-                        assert(attr.properties.size() == 0);
-                    }
-                    else // here we have a / but no text before the ]
-                    {
-                        if (attr.name.size())
-                        {
-                            attr.type = attr.SELF_CLOSING;
-                            std::cout << "self closing attribute " << attr.name << std::endl;
-                        }
-                        else
-                        {
-                            attr.type = attr.CLOSE_ALL;
-                            std::cout << "Closing all attributes " << std::endl;
-
-                            assert(attr.properties.size() == 0);
-                        }
-                    }
-                }
-            }
-
-            assert(attr.type != attr.NONE);
-        }
-    }
-};
+    std::cout << "result is:" << sstr.str() << std::endl;
+}
 
 
 int main(int argc, char* argv[])
 {
 
-#if 0
+#if 1
     std::string testFile;
 
     if (argc > 1)
@@ -493,7 +399,7 @@ int main(int argc, char* argv[])
     // regex test
 
     // all tests parse correctly at time of writing.
-    const std::string test = "Chris:  I think [select value=gender m=he f=she nb=they /] will be there!  [wave][bounce]Hello![/ bounce][ / ]";
+    const std::string test = "Chris:  I think [select value={$gender} m=\"he\" f = \"she\" nb = \"they\" / ] will be there![wave][bounce]Hello![/ bounce][/ ]";
     const std::string test2 = "Oh, [wave]hello[bounce]there![/ bounce][/ wave]"; // test nested attributes
     const std::string test3 = "[wave][bounce]Hello![/]"; // close all.
     const std::string test4 = "[wave = 2 otherprop = 5.0]Wavy![/ wave]";
@@ -502,7 +408,9 @@ int main(int argc, char* argv[])
     const std::string test7 = "[mood = \"superduper angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]
 
     LineAttributes attr;
-    attr.parse(test7);
+    attr.parse(test);
+
+    processLine(test, attr);
 
     // character attribute
 

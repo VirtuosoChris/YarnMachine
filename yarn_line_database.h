@@ -31,7 +31,6 @@
 
 namespace Yarn
 {
-
     struct LineData
     {
         std::string id;
