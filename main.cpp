@@ -283,7 +283,7 @@ struct Attribute
     enum AttribType {NONE=0, OPEN=1, CLOSE=2, SELF_CLOSING=3, CLOSE_ALL=4};
 
     std::string name;
-    std::unordered_map<std::string_view, std::string_view> properties;
+    std::unordered_map<std::string, std::string> properties;
     AttribType type = NONE;
 
     std::size_t position = 0;
@@ -327,6 +327,30 @@ struct LineAttributes
         }
     }
 
+    void parseCharacter(const char* line)
+    {
+        std::regex re("([^:]+):[\\s]*", std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+        std::cmatch cm;
+        if (std::regex_search(line, cm, re))
+        {
+            //std::cout << cm.str(1) << std::endl;
+
+            this->attribs.push_back({});
+
+            auto& attr = this->attribs.back();
+
+            attr.type = Attribute::SELF_CLOSING;
+            attr.name = "character";
+            attr.properties["name"] = cm.str(1);
+            attr.length = cm.str(0).length();
+            attr.position = 0;
+
+            assert(cm.position(0) == 0);
+        }
+
+    }
+
     void parse(const std::string_view& line)
     {
         // -- regex reference :: https://cplusplus.com/reference/regex/ECMAScript/ --
@@ -334,12 +358,10 @@ struct LineAttributes
 
         // this regex finds the opening bracket, captures the attribute name, captures the entire properties string, and captures the closing bracket
         // we look for the attrib name at the beginning, any contiguous sequence of alnum
-        //std::regex re("\\[[\\s]*([\\w|\\d]*)\\s*([^\\/\\]]*)(\\/?\\s*(\\w*)\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+        parseCharacter(line.data());
 
         std::regex re("\\[[\\s]*([\\w|\\d]*)\\s*(=\\s*(?:\"(?:[^\"]+)\"|[^\\s|\"]+))?([^\\/\\]]*)(\\/?\\s*(\\w*)\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
-
-        //xx std::regex   re("\\[[\\s]*([\\w|\\d]*)\\s*[=][\\s]*[^\\s]*([^\\/\\]]*)(\\/?\\s*(\\w*)\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
-
 
         auto words_begin = std::regex_iterator<std::string_view::iterator>(line.begin(), line.end(), re);
         auto words_end = std::regex_iterator<std::string_view::iterator>();
@@ -368,7 +390,7 @@ struct LineAttributes
                 attr.name = match.str(1);
             }
 
-            // the optional shorthand one
+            // the optional shorthand one eg for [bounce=2] instead of [bounce bounce=2]
             if ((match.size() > 2) && match.str(2).length())
             {
                 assert(attr.name.size());
@@ -378,7 +400,7 @@ struct LineAttributes
                 parseProperties(attr, tmp);
             }
 
-            //index 2 is the properties string
+            //index 3 is the properties string
             if ((match.size() > 3) && match.str(3).length())
             {
                 int startPos = match.position(3);
@@ -388,7 +410,7 @@ struct LineAttributes
                 parseProperties(attr, x);
             }
 
-            // index 3 is close tag
+            // index 4 is close tag
             if (match.size() > 4)
             {
                 if (match.str(4).length() == 1) // we just have a ] at the end, no /]
@@ -401,7 +423,7 @@ struct LineAttributes
                 {
                     assert(attr.NONE == attr.type);
 
-                    // index 4 is attrib we're closing
+                    // index 5 is attrib we're closing
                     if (match.size() > 5 && (match.str(5).length()))
                     {
                         assert(attr.name.size() == 0);
@@ -414,6 +436,8 @@ struct LineAttributes
                         attr.type = attr.CLOSE;
 
                         std::cout << "Closing attribute " << attr.name << std::endl;
+
+                        assert(attr.properties.size() == 0);
                     }
                     else // here we have a / but no text before the ]
                     {
@@ -426,6 +450,8 @@ struct LineAttributes
                         {
                             attr.type = attr.CLOSE_ALL;
                             std::cout << "Closing all attributes " << std::endl;
+
+                            assert(attr.properties.size() == 0);
                         }
                     }
                 }
@@ -466,10 +492,8 @@ int main(int argc, char* argv[])
 #else
     // regex test
 
-    // this can be illegal [ [] ]
-    // but this needs to be handled [] [] [/]
-
-    const std::string test = "I think [select value=gender m=he f=she nb=they /] will be there!  [wave][bounce]Hello![/ bounce][ / ]";
+    // all tests parse correctly at time of writing.
+    const std::string test = "Chris:  I think [select value=gender m=he f=she nb=they /] will be there!  [wave][bounce]Hello![/ bounce][ / ]";
     const std::string test2 = "Oh, [wave]hello[bounce]there![/ bounce][/ wave]"; // test nested attributes
     const std::string test3 = "[wave][bounce]Hello![/]"; // close all.
     const std::string test4 = "[wave = 2 otherprop = 5.0]Wavy![/ wave]";
@@ -477,10 +501,8 @@ int main(int argc, char* argv[])
     const std::string test6 = "[mood mood = \"superduper angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]
     const std::string test7 = "[mood = \"superduper angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]
 
-    // passing : test test2 test3 test4 test5 test6 test7
-
     LineAttributes attr;
-    attr.parse(test);
+    attr.parse(test7);
 
     // character attribute
 
