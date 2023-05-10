@@ -300,6 +300,24 @@ struct LineAttributes
 {
     std::vector<Attribute> attribs;
 
+    static void parseProperties(Attribute& attr, const std::string_view& x)
+    {
+        std::cout << "parsing properties out of " << x << std::endl;
+
+        // second regex captures the key-value pairs
+        std::regex re2("([^\\s]+)=([^\\s]+)", std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+        auto words_begin = std::regex_iterator<std::string_view::iterator>(x.begin(), x.end(), re2);
+        auto words_end = std::regex_iterator<std::string_view::iterator>();
+
+        for (std::regex_iterator i = words_begin; i != words_end; ++i)
+        {
+            std::cout << "key value of " << i->str(1) << "::" << i->str(2) << std::endl;
+
+            attr.properties[i->str(1)] = i->str(2);
+        }
+    }
+
     void parse(const std::string_view& line)
     {
         // -- regex reference :: https://cplusplus.com/reference/regex/ECMAScript/ --
@@ -310,15 +328,12 @@ struct LineAttributes
         //\\[\\s*\\/\\s*\\]|
         std::regex re("\\[(\\w*)\\s*([^\\/\\]]*)(\\/?\\s*(\\w*)\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
 
-        // second regex captures the key-value pairs
-        std::regex re2("([^\\s]+)=([^\\s]+)", std::regex_constants::ECMAScript | std::regex_constants::icase);
-
         auto words_begin = std::regex_iterator<std::string_view::iterator>(line.begin(), line.end(), re);
         auto words_end = std::regex_iterator<std::string_view::iterator>();
 
         for (std::regex_iterator i = words_begin; i != words_end; ++i)
         {
-            // std::cout << "processing attrib section" << std::endl;
+            //std::cout << "processing attrib section" << std::endl;
 
             attribs.push_back(Attribute{});
             Attribute& attr = attribs.back();
@@ -336,6 +351,14 @@ struct LineAttributes
             }
 
             //index 2 is the properties string
+            if ((match.size() > 2) && match.str(2).length())
+            {
+                int startPos = match.position(2);
+                int length = match.str(2).length();
+                std::string_view x(&line[startPos], length);
+
+                parseProperties(attr, x);
+            }
 
             // index 3 is close tag
             if (match.size() > 3)
@@ -344,7 +367,7 @@ struct LineAttributes
                 {
                     attr.type = attr.OPEN;
 
-                    //std::cout << "opening attrib " << attr.name << std::endl;
+                    std::cout << "opening attrib " << attr.name << std::endl;
                 }
                 else if  (match.str(3).length() > 1) // we have a / and maybe an attrib name before the ]
                 {
@@ -362,22 +385,19 @@ struct LineAttributes
 
                         attr.type = attr.CLOSE;
 
-                        // if (attr.type == attr.CLOSE) std::cout << "Closing attribute " << attr.name << std::endl;
-                        //
-                        // else
-                        //    std::cout << "Closing all attributes " << std::endl;
+                        std::cout << "Closing attribute " << attr.name << std::endl;
                     }
                     else // here we have a / but no text before the ]
                     {
                         if (attr.name.size())
                         {
                             attr.type = attr.SELF_CLOSING;
-                            //std::cout << "self closing attribute " << std::endl;
+                            std::cout << "self closing attribute " << attr.name << std::endl;
                         }
                         else
                         {
                             attr.type = attr.CLOSE_ALL;
-                            //std::cout << "Closing all attributes " << std::endl;
+                            std::cout << "Closing all attributes " << std::endl;
                         }
                     }
                 }
@@ -438,37 +458,7 @@ int main(int argc, char* argv[])
     // character attribute
 
 //    std::cout << test << std::endl;
-#if 0
-    std::smatch match;
 
-    // we can use member function on match
-    // to extract the matched pattern.
-    if (std::regex_search(test, match, re) == true)
-    {
-        std::cout << "Match size = " << match.size() << std::endl;
-
-        for (int i = 0; i < match.size(); i++)
-        {
-            std::cout << match.str(i) << " which is captured at index " << match.position(i) << " and length " << match.str(i).length() << std::endl;
-        }
-
-        int startPos = match.position(2);
-        int length = match.str(2).length();
-        std::string_view x(&test[startPos], length);
-
-        auto words_begin = std::regex_iterator<std::string_view::iterator>(x.begin(), x.end(), re2);
-        auto words_end = std::regex_iterator<std::string_view::iterator>();
-
-        for (std::regex_iterator i = words_begin; i != words_end; ++i)
-        {
-            std::cout << "key value of " << i->str(1) << "::" << i->str(2) << std::endl;
-        }
-    }
-    else
-    {
-        std::cout << "No match is found" << std::endl;
-    }
-#endif
 
 #endif
 
