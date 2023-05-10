@@ -245,7 +245,6 @@ struct YarnRunnerConsole
             }
         }
     }
-
 };
 
 /// write all variables, types, and values to an ostream as key:value pairs, one variable per line
@@ -305,16 +304,26 @@ struct LineAttributes
         std::cout << "parsing properties out of " << x << std::endl;
 
         // second regex captures the key-value pairs
-        std::regex re2("([^\\s]+)=([^\\s]+)", std::regex_constants::ECMAScript | std::regex_constants::icase);
+        // std::regex re2("([^\\s]+)\\s*=\\s*\"?([^\\s|\"]+)", std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+        std::regex re2("([^\\s]+)\\s*=\\s*(\"([^\"]+)\"|[^\\s|\"]+)", std::regex_constants::ECMAScript | std::regex_constants::icase);
 
         auto words_begin = std::regex_iterator<std::string_view::iterator>(x.begin(), x.end(), re2);
         auto words_end = std::regex_iterator<std::string_view::iterator>();
 
         for (std::regex_iterator i = words_begin; i != words_end; ++i)
         {
-            std::cout << "key value of " << i->str(1) << "::" << i->str(2) << std::endl;
+            int valueIndex = i->str(3).length() ? 3 : 2;
 
-            attr.properties[i->str(1)] = i->str(2);
+            std::cout << "key value of " << i->str(1) << "::" << i->str(valueIndex) << std::endl;
+
+            attr.properties[i->str(1)] = i->str(valueIndex);
+
+            if (attr.name.length() == 0)
+            {
+                attr.name = i->str(1);
+                std::cout << "Defaulting attribute name to " << attr.name << std::endl;
+            }
         }
     }
 
@@ -324,9 +333,13 @@ struct LineAttributes
         // since regexes are horrible you can test that they work here : https://regex101.com/
 
         // this regex finds the opening bracket, captures the attribute name, captures the entire properties string, and captures the closing bracket
-        //std::regex re("\\[(\\w+)\\s+([^\\/\\]]*)(\\/?\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
-        //\\[\\s*\\/\\s*\\]|
-        std::regex re("\\[(\\w*)\\s*([^\\/\\]]*)(\\/?\\s*(\\w*)\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
+        // we look for the attrib name at the beginning, any contiguous sequence of alnum
+        //std::regex re("\\[[\\s]*([\\w|\\d]*)\\s*([^\\/\\]]*)(\\/?\\s*(\\w*)\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+        std::regex re("\\[[\\s]*([\\w|\\d]*)\\s*(=\\s*[^\\s^\\/^\\]]+)?([^\\/\\]]*)(\\/?\\s*(\\w*)\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+        //xx std::regex   re("\\[[\\s]*([\\w|\\d]*)\\s*[=][\\s]*[^\\s]*([^\\/\\]]*)(\\/?\\s*(\\w*)\\])", std::regex_constants::ECMAScript | std::regex_constants::icase);
+
 
         auto words_begin = std::regex_iterator<std::string_view::iterator>(line.begin(), line.end(), re);
         auto words_end = std::regex_iterator<std::string_view::iterator>();
@@ -340,6 +353,11 @@ struct LineAttributes
 
             auto match = *i;
 
+            for (int i = 0; i < match.size(); i++)
+            {
+                std::cout << '\t' << match.str(i) << " which is captured at index " << match.position(i) << " and length " << match.str(i).length() << std::endl;
+            }
+
             attr.position = match.position(0);
             attr.length = match.str(0).length();
 
@@ -350,35 +368,45 @@ struct LineAttributes
                 attr.name = match.str(1);
             }
 
-            //index 2 is the properties string
+            // the optional shorthand one
             if ((match.size() > 2) && match.str(2).length())
             {
-                int startPos = match.position(2);
-                int length = match.str(2).length();
+                assert(attr.name.size());
+
+                std::string tmp = attr.name + match.str(2);
+
+                parseProperties(attr, tmp);
+            }
+
+            //index 2 is the properties string
+            if ((match.size() > 3) && match.str(3).length())
+            {
+                int startPos = match.position(3);
+                int length = match.str(3).length();
                 std::string_view x(&line[startPos], length);
 
                 parseProperties(attr, x);
             }
 
             // index 3 is close tag
-            if (match.size() > 3)
+            if (match.size() > 4)
             {
-                if (match.str(3).length() == 1) // we just have a ] at the end, no /]
+                if (match.str(4).length() == 1) // we just have a ] at the end, no /]
                 {
                     attr.type = attr.OPEN;
 
                     std::cout << "opening attrib " << attr.name << std::endl;
                 }
-                else if  (match.str(3).length() > 1) // we have a / and maybe an attrib name before the ]
+                else if  (match.str(4).length() > 1) // we have a / and maybe an attrib name before the ]
                 {
                     assert(attr.NONE == attr.type);
 
                     // index 4 is attrib we're closing
-                    if (match.size() > 4 && (match.str(4).length()))
+                    if (match.size() > 5 && (match.str(5).length()))
                     {
                         assert(attr.name.size() == 0);
 
-                        attr.name = match.str(4);
+                        attr.name = match.str(5);
 
                         // if there's no attribute named with a /, then we are closing all
                         //attr.type = attr.name.size() ? attr.CLOSE : attr.CLOSE_ALL;
@@ -402,11 +430,6 @@ struct LineAttributes
                     }
                 }
             }
-
-            //for (int i = 0; i < match.size(); i++)
-            //{
-            //    std::cout << '\t' << match.str(i) << " which is captured at index " << match.position(i) << " and length " << match.str(i).length() << std::endl;
-            //}
 
             assert(attr.type != attr.NONE);
         }
@@ -450,10 +473,13 @@ int main(int argc, char* argv[])
     const std::string test2 = "Oh, [wave]hello[bounce]there![/ bounce][/ wave]"; // test nested attributes
     const std::string test3 = "[wave][bounce]Hello![/]"; // close all.
     const std::string test4 = "[wave = 2]Wavy![/ wave]";
-    const std::string test5 = "[mood = \"angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]
+    const std::string test5 = "[mood mood = \"angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]
+    const std::string test6 = "[mood mood = \"superduper angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]
+
+    // passing : test test2 test3 test4 test5 test6
 
     LineAttributes attr;
-    attr.parse(test);
+    attr.parse(test6);
 
     // character attribute
 
