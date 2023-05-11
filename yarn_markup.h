@@ -21,7 +21,7 @@ namespace Yarn
 
             void parseProperties(const std::string_view& x)
             {
-                std::cout << "parsing properties out of " << x << std::endl;
+                //std::cout << "parsing properties out of " << x << std::endl;
 
                 // regex captures the key-value pairs
                 std::regex re2("([^\\s]+)\\s*=\\s*(\"([^\"]+)\"|[^\\s|\"]+)", std::regex_constants::ECMAScript | std::regex_constants::icase);
@@ -33,7 +33,7 @@ namespace Yarn
                 {
                     int valueIndex = i->str(3).length() ? 3 : 2;
 
-                    std::cout << "key value of " << i->str(1) << "::" << i->str(valueIndex) << std::endl;
+                    //std::cout << "key value of " << i->str(1) << "::" << i->str(valueIndex) << std::endl;
 
                     properties[i->str(1)] = i->str(valueIndex);
 
@@ -55,6 +55,9 @@ namespace Yarn
                 parse(line);
             }
 
+            LineAttributes()
+            {
+            }
 
             void parseCharacter(const char* line)
             {
@@ -104,10 +107,12 @@ namespace Yarn
 
                     auto match = *i;
 
+#if 0
                     for (int i = 0; i < match.size(); i++)
                     {
                         std::cout << '\t' << match.str(i) << " which is captured at index " << match.position(i) << " and length " << match.str(i).length() << std::endl;
                     }
+#endif
 
                     attr.position = match.position(0);
                     attr.length = match.str(0).length();
@@ -146,7 +151,7 @@ namespace Yarn
                         {
                             attr.type = attr.OPEN;
 
-                            std::cout << "opening attrib " << attr.name << std::endl;
+                            //std::cout << "opening attrib " << attr.name << std::endl;
                         }
                         else if (match.str(4).length() > 1) // we have a / and maybe an attrib name before the ]
                         {
@@ -164,7 +169,7 @@ namespace Yarn
 
                                 attr.type = attr.CLOSE;
 
-                                std::cout << "Closing attribute " << attr.name << std::endl;
+                                //std::cout << "Closing attribute " << attr.name << std::endl;
 
                                 assert(attr.properties.size() == 0);
                             }
@@ -173,12 +178,12 @@ namespace Yarn
                                 if (attr.name.size())
                                 {
                                     attr.type = attr.SELF_CLOSING;
-                                    std::cout << "self closing attribute " << attr.name << std::endl;
+                                    //std::cout << "self closing attribute " << attr.name << std::endl;
                                 }
                                 else
                                 {
                                     attr.type = attr.CLOSE_ALL;
-                                    std::cout << "Closing all attributes " << std::endl;
+                                    //std::cout << "Closing all attributes " << std::endl;
 
                                     assert(attr.properties.size() == 0);
                                 }

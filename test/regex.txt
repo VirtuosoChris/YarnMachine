@@ -1,0 +1,8 @@
+// all tests parse correctly at time of writing.
+    const std::string test = "Chris:  I think [select value={$gender} m=\"he\" f = \"she\" nb = \"they\" / ] will be there![wave][bounce]Hello![/ bounce][/ ]";
+    const std::string test2 = "Oh, [wave]hello[bounce]there![/ bounce][/ wave]"; // test nested attributes
+    const std::string test3 = "[wave][bounce]Hello![/]"; // close all.
+    const std::string test4 = "[wave = 2 otherprop = 5.0]Wavy![/ wave]";
+    const std::string test5 = "[mood mood = \"angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]
+    const std::string test6 = "[mood mood = \"superduper angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]
+    const std::string test7 = "[mood = \"superduper angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]

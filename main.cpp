@@ -38,6 +38,10 @@ struct YarnRunnerConsole
 
     std::string moduleName;
 
+    bool ignoreAllMarkup = false;
+
+    //std::unordered_map<Yarn::LineID, Yarn::Markup::LineAttributes> markup;
+
     YarnRunnerConsole()
     {
         setCallbacks();
@@ -87,14 +91,120 @@ struct YarnRunnerConsole
 
     void showLine(const Yarn::YarnVM::Line& line)
     {
+        std::string lineS;
         if (!line.substitutions.size())
         {
-            std::cout << db.lines[line.id].text << std::endl;
+            //std::cout << db.lines[line.id].text << std::endl;
+            lineS = db.lines[line.id].text;
         }
         else
         {
-            std::cout << Yarn::make_substitutions(db.lines[line.id].text, line.substitutions) << std::endl;
+            lineS = Yarn::make_substitutions(db.lines[line.id].text, line.substitutions);
+            //std::cout << lineWithSubs << std::endl;
         }
+
+        if (ignoreAllMarkup)
+        {
+            std::cout << lineS << std::endl;
+        }
+        else
+        {
+            // parse attributes from line text
+            Yarn::Markup::LineAttributes attr(lineS);
+            processLine(lineS, attr);
+        }
+    }
+
+    void emit(std::ostream& str, const std::string_view& line, std::size_t begin, std::size_t end)
+    {
+        assert(end > begin);
+        str << line.substr(begin, end - begin);
+    }
+
+#if 0
+    std::string_view varName(const std::string& value)
+    {
+        std::size_t open = value.find_first_of('{') + 1;
+        std::size_t length = value.find_first_of('}') - open;
+
+        if ((open == std::string::npos) || (length == std::string::npos) || !length)
+        {
+            throw YarnException("Malformed variable name in value property for select markup");
+        }
+
+        return std::string_view(&value[open], length);
+    }
+#endif
+
+    void handleAttrib(std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
+    {
+        if (attrib.name == "select")
+        {
+            //const std::string& value = attrib.properties["value"].c_str();
+
+            auto it = attrib.properties.find("value");
+
+            if (it != attrib.properties.end())
+            {
+                const std::string& value = it->second;
+
+                //std::cout << value << std::endl;
+
+                //std::string_view variableName = varName(value);
+
+                //std::cout << variableName << " from " << value << std::endl;
+
+            }
+            else
+            {
+                // value not found
+            }
+        }
+    }
+
+    void processLine(const std::string_view& line, const Yarn::Markup::LineAttributes& attribs)
+    {
+        std::stringstream sstr;
+
+        std::size_t cursorIndex = 0;
+        auto nextAttrib = attribs.attribs.begin();
+
+        while (cursorIndex < line.length())
+        {
+            if (nextAttrib == attribs.attribs.end())
+            {
+                //std::cout << "ran out of attribs!";
+                emit(sstr, line, cursorIndex, line.size());
+                cursorIndex = line.size();
+            }
+            else
+            {
+                std::size_t al = nextAttrib->length;
+                std::size_t ap = nextAttrib->position;
+
+                if (ap - cursorIndex)
+                {
+                    emit(sstr, line, cursorIndex, ap);
+                }
+
+                assert(al);
+                if (al)
+                {
+                    handleAttrib(sstr, line, *nextAttrib);
+
+                    //std::cout << "\tHandling attrib :";
+                    //emit(sstr, line, ap, ap + al);
+                }
+
+                // handle attrib;
+                assert((al + ap) > cursorIndex);
+                cursorIndex = al + ap; // advance cursor to after the attribute we just handled
+
+                nextAttrib++;
+            }
+        }
+
+        std::cout << sstr.str() << std::endl;
     }
 
     void loadModuleLineDB(const std::string& moduleName)
@@ -278,101 +388,8 @@ std::ostream& logVariables(std::ostream& str, const Yarn::YarnVM& vm)
     return str;
 }
 
-void emit(std::ostream& str, const std::string_view& line, std::size_t begin, std::size_t end)
-{
-    assert(end > begin);
-    str << line.substr(begin, end - begin);
-}
-
-std::string_view varName(const std::string& value)
-{
-    std::size_t open = value.find_first_of('{') + 1;
-    std::size_t length = value.find_first_of('}') - open;
-
-    if ((open == std::string::npos) || (length == std::string::npos) || !length)
-    {
-        throw YarnException("Malformed variable name in value property for select markup");
-    }
-
-    return std::string_view(&value[open], length);
-}
-
-void handleAttrib(std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
-{
-    if (attrib.name == "select")
-    {
-        //const std::string& value = attrib.properties["value"].c_str();
-
-        auto it = attrib.properties.find("value");
-
-        if (it != attrib.properties.end())
-        {
-            const std::string& value = it->second;
-
-            //std::cout << value << std::endl;
-
-            std::string_view variableName = varName(value);
-
-            std::cout << variableName << " from " << value << std::endl;
-
-        }
-        else
-        {
-            // value not found
-        }
-    }
-}
-
-void processLine(const std::string_view& line, const Yarn::Markup::LineAttributes& attribs)
-{
-    std::stringstream sstr;
-
-    std::size_t cursorIndex = 0;
-    auto nextAttrib = attribs.attribs.begin();
-
-    while (cursorIndex < line.length())
-    {
-        if (nextAttrib == attribs.attribs.end())
-        {
-            std::cout << "ran out of attribs!";
-            emit(sstr, line, cursorIndex, line.size());
-        }
-        else
-        {
-            std::size_t al = nextAttrib->length;
-            std::size_t ap = nextAttrib->position;
-
-            if (ap - cursorIndex)
-            {
-                emit(sstr, line, cursorIndex, ap);
-            }
-
-            assert(al);
-            if (al)
-            {
-                handleAttrib(sstr, line, *nextAttrib);
-
-                //std::cout << "\tHandling attrib :";
-                //emit(sstr, line, ap, ap + al);
-            }
-
-            // handle attrib;
-            assert((al + ap) > cursorIndex);
-            cursorIndex = al + ap; // advance cursor to after the attribute we just handled
-
-            nextAttrib++;
-        }
-    }
-
-
-    std::cout << "result is:" << sstr.str() << std::endl;
-}
-
-
 int main(int argc, char* argv[])
 {
-
-#if 1
     std::string testFile;
 
     if (argc > 1)
@@ -394,30 +411,6 @@ int main(int argc, char* argv[])
     yarn.loop();
 
     // dump variables to the console after the script runs
-    logVariables(std::cout, yarn.vm);
-#else
-    // regex test
-
-    // all tests parse correctly at time of writing.
-    const std::string test = "Chris:  I think [select value={$gender} m=\"he\" f = \"she\" nb = \"they\" / ] will be there![wave][bounce]Hello![/ bounce][/ ]";
-    const std::string test2 = "Oh, [wave]hello[bounce]there![/ bounce][/ wave]"; // test nested attributes
-    const std::string test3 = "[wave][bounce]Hello![/]"; // close all.
-    const std::string test4 = "[wave = 2 otherprop = 5.0]Wavy![/ wave]";
-    const std::string test5 = "[mood mood = \"angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]
-    const std::string test6 = "[mood mood = \"superduper angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]
-    const std::string test7 = "[mood = \"superduper angry\"] Grr![/mood]"; // should equivalent to [mood=angry]Grr![/mood]
-
-    LineAttributes attr;
-    attr.parse(test);
-
-    processLine(test, attr);
-
-    // character attribute
-
-//    std::cout << test << std::endl;
-
-
-#endif
-
+    // logVariables(std::cout, yarn.vm);
 }
 

@@ -12,6 +12,7 @@ yarn_instructions.cpp
 yarn_util.cpp
 yarn_util.h
 yarn_line_database.h
+yarn_markup.h
 generated/yarn_spinner.pb.cc
 generated/yarn_spinner.pb.h
 )
