@@ -94,13 +94,11 @@ struct YarnRunnerConsole
         std::string lineS;
         if (!line.substitutions.size())
         {
-            //std::cout << db.lines[line.id].text << std::endl;
             lineS = db.lines[line.id].text;
         }
         else
         {
             lineS = Yarn::make_substitutions(db.lines[line.id].text, line.substitutions);
-            //std::cout << lineWithSubs << std::endl;
         }
 
         if (ignoreAllMarkup)
@@ -121,44 +119,33 @@ struct YarnRunnerConsole
         str << line.substr(begin, end - begin);
     }
 
-#if 0
-    std::string_view varName(const std::string& value)
-    {
-        std::size_t open = value.find_first_of('{') + 1;
-        std::size_t length = value.find_first_of('}') - open;
-
-        if ((open == std::string::npos) || (length == std::string::npos) || !length)
-        {
-            throw YarnException("Malformed variable name in value property for select markup");
-        }
-
-        return std::string_view(&value[open], length);
-    }
-#endif
-
     void handleAttrib(std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
     {
         if (attrib.name == "select")
         {
-            //const std::string& value = attrib.properties["value"].c_str();
-
             auto it = attrib.properties.find("value");
 
             if (it != attrib.properties.end())
             {
                 const std::string& value = it->second;
 
-                //std::cout << value << std::endl;
-
-                //std::string_view variableName = varName(value);
-
-                //std::cout << variableName << " from " << value << std::endl;
-
+                auto it = attrib.properties.find(value);
+                if (it != attrib.properties.end())
+                {
+                    str << it->second;
+                }
             }
             else
             {
-                // value not found
+                throw YarnException("select attribute missing value property");
             }
+        }
+        else if (attrib.name == "plural")
+        {
+
+        }
+        else if (attrib.name == "ordinal")
+        {
         }
     }
 
@@ -173,7 +160,6 @@ struct YarnRunnerConsole
         {
             if (nextAttrib == attribs.attribs.end())
             {
-                //std::cout << "ran out of attribs!";
                 emit(sstr, line, cursorIndex, line.size());
                 cursorIndex = line.size();
             }
@@ -191,9 +177,6 @@ struct YarnRunnerConsole
                 if (al)
                 {
                     handleAttrib(sstr, line, *nextAttrib);
-
-                    //std::cout << "\tHandling attrib :";
-                    //emit(sstr, line, ap, ap + al);
                 }
 
                 // handle attrib;
