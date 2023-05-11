@@ -181,6 +181,19 @@ struct YarnRunnerConsole
         }
     }
 
+    void replace(std::ostream& str, const std::string& s, const std::string& repl, const char x='%')
+    {
+        size_t cursor = 0;
+        size_t pos;
+        while ((pos = s.find(x, cursor)) != std::string::npos)
+        {
+            str << std::string_view(&s[cursor], pos - cursor);
+            str << repl;
+            cursor = pos + 1;
+        }
+
+        str << std::string_view(&s[cursor], s.size() - cursor);
+    }
 
     void handleAttrib(std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
     {
@@ -192,7 +205,8 @@ struct YarnRunnerConsole
 
             if (it != attrib.properties.end())
             {
-                str << it->second;
+                //str << it->second;
+                replace(str, it->second, value, '%');
             }
             else
             {
@@ -200,7 +214,9 @@ struct YarnRunnerConsole
                 auto it = attrib.properties.find("other");
                 if (it != attrib.properties.end())
                 {
-                    str << it->second;
+                    //str << it->second;
+
+                    replace(str, it->second, value, '%');
                 }
                 else
                 {
@@ -217,7 +233,9 @@ struct YarnRunnerConsole
 
             if (it != attrib.properties.end())
             {
-                str << it->second;
+                //str << it->second;
+
+                replace(str, it->second, value, '%');
             }
             else
             {
@@ -232,7 +250,9 @@ struct YarnRunnerConsole
 
             if (it != attrib.properties.end())
             {
-                str << it->second;
+                //str << it->second;
+
+                replace(str, it->second, value, '%');
             }
             else
             {
