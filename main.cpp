@@ -119,33 +119,125 @@ struct YarnRunnerConsole
         str << line.substr(begin, end - begin);
     }
 
+    std::string getCardinalPluralClass(int value) const
+    {
+        /*
+        * plural classes can be:
+        one
+        two
+        few
+        many
+        other
+        * Not every language uses every category; for example, English only uses "one" and "other" for cardinal plural classes.
+        */
+
+        switch (value)
+        {
+        case 1: return "one";
+        case 2: return "other";
+        default: return "other";
+        }
+    }
+
+    std::string getOrdinalPluralClass(int value) const
+    {
+        if (value > 20)
+        {
+            value = value % 10;
+        }
+
+        switch (value)
+        {
+        case 1: return "one";
+        case 2: return "two";
+        case 3: return "few";
+        case 4: return "other";
+        default: return "other";
+        }
+    }
+
+    std::string getCardinalPluralClass(const std::string& val) const
+    {
+        return getCardinalPluralClass(std::stoi(val));;
+    }
+
+    std::string getOrdinalPluralClass(const std::string& val) const
+    {
+        return getOrdinalPluralClass(std::stoi(val));
+    }
+
+    const std::string& findValue(const Yarn::Markup::Attribute& attrib)
+    {
+        auto it = attrib.properties.find("value");
+
+        if (it != attrib.properties.end())
+        {
+            const std::string& value = it->second;
+            return value;
+        }
+        else
+        {
+            throw YarnException("select attribute missing value property");
+        }
+    }
+
+
     void handleAttrib(std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
     {
         if (attrib.name == "select")
         {
-            auto it = attrib.properties.find("value");
+            const std::string& value = findValue(attrib);
+
+            auto it = attrib.properties.find(value);
 
             if (it != attrib.properties.end())
             {
-                const std::string& value = it->second;
-
-                auto it = attrib.properties.find(value);
+                str << it->second;
+            }
+            else
+            {
+                // using other as fallback like in the plurals
+                auto it = attrib.properties.find("other");
                 if (it != attrib.properties.end())
                 {
                     str << it->second;
                 }
-            }
-            else
-            {
-                throw YarnException("select attribute missing value property");
+                else
+                {
+                    throw YarnException("Unable to resolve value for select markup");
+                }
             }
         }
         else if (attrib.name == "plural")
         {
 
+            const std::string& value = findValue(attrib);
+
+            auto it = attrib.properties.find(getCardinalPluralClass(value));
+
+            if (it != attrib.properties.end())
+            {
+                str << it->second;
+            }
+            else
+            {
+                throw YarnException("Unable to resolve value for plural markup");
+            }
         }
         else if (attrib.name == "ordinal")
         {
+            const std::string& value = findValue(attrib);
+
+            auto it = attrib.properties.find(getOrdinalPluralClass(value));
+
+            if (it != attrib.properties.end())
+            {
+                str << it->second;
+            }
+            else
+            {
+                throw YarnException("Unable to resolve value for ordinal markup");
+            }
         }
     }
 
@@ -340,36 +432,36 @@ struct YarnRunnerConsole
             }
         }
     }
-};
 
-/// write all variables, types, and values to an ostream as key:value pairs, one variable per line
-std::ostream& logVariables(std::ostream& str, const Yarn::YarnVM& vm)
-{
-    for (auto it = vm.variableStorage.begin(); it != vm.variableStorage.end(); it++)
+    /// write all variables, types, and values to an ostream as key:value pairs, one variable per line
+    std::ostream& logVariables(std::ostream& str)
     {
-        str << "name:" << it->first << "\ttype:";
+        for (auto it = vm.variableStorage.begin(); it != vm.variableStorage.end(); it++)
+        {
+            str << "name:" << it->first << "\ttype:";
 
-        if (it->second.has_bool_value())
-        {
-            str << "bool\tvalue:" << it->second.bool_value() << '\n';
+            if (it->second.has_bool_value())
+            {
+                str << "bool\tvalue:" << it->second.bool_value() << '\n';
+            }
+            else if (it->second.has_float_value())
+            {
+                str << "float\tvalue:" << it->second.float_value() << '\n';
+            }
+            else if (it->second.has_string_value())
+            {
+                str << "string\tvalue:" << it->second.string_value() << '\n';
+            }
+            else
+            {
+                // this should never happen
+                str << "UNDEFINED\tvalue:UNDEFINED\n";
+            }
         }
-        else if (it->second.has_float_value())
-        {
-            str << "float\tvalue:" << it->second.float_value() << '\n';
-        }
-        else if (it->second.has_string_value())
-        {
-            str << "string\tvalue:" << it->second.string_value() << '\n';
-        }
-        else
-        {
-            // this should never happen
-            str << "UNDEFINED\tvalue:UNDEFINED\n";
-        }
+
+        return str;
     }
-
-    return str;
-}
+};
 
 int main(int argc, char* argv[])
 {
@@ -392,8 +484,5 @@ int main(int argc, char* argv[])
 
     // do the main loop and run the program.
     yarn.loop();
-
-    // dump variables to the console after the script runs
-    // logVariables(std::cout, yarn.vm);
 }
 
