@@ -13,6 +13,8 @@
  * virtual void onPresentOptions(const OptionsList&) = 0;
  * as well as
  * virtual void onReceiveText(const std::string_view& s) = 0; method for when the Yarn VM wants to display raw text
+ * add whatever attribCallbacks for markup processing you need beyond the built in ones by creating std::function AttribCallback's and
+ * adding them to attribCallbacks lookup table
  *
  * At runtime, load a Yarn module by path/module name by calling loadModule()
  * (de)serialize with save / restore method
@@ -42,6 +44,11 @@ namespace Yarn
         Yarn::YarnVM vm;
         Virtuoso::QuakeStyleConsole commands; ///< Use a c++ quake style console as a command parser / command provider
 
+        // args are string stream to write output line text to, string view of line text, and markup attribute data
+        typedef std::function<void(std::ostream&, const std::string_view&, const Yarn::Markup::Attribute&)> AttribCallback;
+
+        std::unordered_map<std::string, AttribCallback> attribCallbacks;
+
         std::string moduleName;
 
         Settings setts;
@@ -63,12 +70,11 @@ namespace Yarn
 
         void processLine(const std::string_view& line, const Yarn::Markup::LineAttributes& attribs);
 
+        void setAttribCallbacks(); // set built in attrib callbacks
+
     private:
 
-        const std::string& findValue(const Yarn::Markup::Attribute& attrib);
-
-        void handleAttrib(std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib);
-
+        static const std::string& findValue(const Yarn::Markup::Attribute& attrib);
     };
 }
 

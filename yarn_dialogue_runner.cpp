@@ -26,9 +26,24 @@ void replace(std::ostream& str, const std::string& s, const std::string& repl, c
     str << std::string_view(&s[cursor], s.size() - cursor);
 }
 
-void Yarn::YarnRunnerBase::handleAttrib(std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
+const std::string& Yarn::YarnRunnerBase::findValue(const Yarn::Markup::Attribute& attrib)
 {
-    if (attrib.name == "select")
+    auto it = attrib.properties.find("value");
+
+    if (it != attrib.properties.end())
+    {
+        const std::string& value = it->second;
+        return value;
+    }
+    else
+    {
+        throw YarnException("select attribute missing value property");
+    }
+}
+
+void Yarn::YarnRunnerBase::setAttribCallbacks()
+{
+    this->attribCallbacks["select"] = [](std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
     {
         const std::string& value = findValue(attrib);
 
@@ -54,8 +69,9 @@ void Yarn::YarnRunnerBase::handleAttrib(std::ostream& str, const std::string_vie
                 throw YarnException("Unable to resolve value for select markup");
             }
         }
-    }
-    else if (attrib.name == "plural")
+    };
+
+    this->attribCallbacks["plural"] = [](std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
     {
         const std::string& value = findValue(attrib);
 
@@ -63,16 +79,15 @@ void Yarn::YarnRunnerBase::handleAttrib(std::ostream& str, const std::string_vie
 
         if (it != attrib.properties.end())
         {
-            //str << it->second;
-
             replace(str, it->second, value, '%');
         }
         else
         {
             throw YarnException("Unable to resolve value for plural markup");
         }
-    }
-    else if (attrib.name == "ordinal")
+    };
+
+    this->attribCallbacks["ordinal"] = [](std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
     {
         const std::string& value = findValue(attrib);
 
@@ -88,27 +103,14 @@ void Yarn::YarnRunnerBase::handleAttrib(std::ostream& str, const std::string_vie
         {
             throw YarnException("Unable to resolve value for ordinal markup");
         }
-    }
-}
-
-const std::string& Yarn::YarnRunnerBase::findValue(const Yarn::Markup::Attribute& attrib)
-{
-    auto it = attrib.properties.find("value");
-
-    if (it != attrib.properties.end())
-    {
-        const std::string& value = it->second;
-        return value;
-    }
-    else
-    {
-        throw YarnException("select attribute missing value property");
-    }
+    };
 }
 
 Yarn::YarnRunnerBase::YarnRunnerBase()
 {
     vm.setCallbacks(this);
+
+    setAttribCallbacks();
 }
 
 void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn::Markup::LineAttributes& attribs)
@@ -136,9 +138,18 @@ void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn:
             }
 
             assert(al);
+
             if (al)
             {
-                handleAttrib(sstr, line, *nextAttrib);
+                auto it = attribCallbacks.find(nextAttrib->name);
+                if (it != attribCallbacks.end())
+                {
+                    it->second(sstr, line, *nextAttrib);
+                }
+                else
+                {
+                    // -- unhandled markup attrib name --
+                }
             }
 
             // handle attrib;
