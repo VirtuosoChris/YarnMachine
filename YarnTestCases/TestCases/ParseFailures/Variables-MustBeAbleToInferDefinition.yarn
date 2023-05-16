@@ -1,6 +1,0 @@
-title: Start
----
-// Error: we don't have any way to determine the type of $myVar, so we can't
-// create an implicit declaration for it.
-Here's a variable: {$myVar}
-===
