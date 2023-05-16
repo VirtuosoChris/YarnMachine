@@ -6,9 +6,15 @@
 #include <yarn_markup.h>
 #include <yarn_spinner.pb.h>
 
-void emit(std::ostream& str, const std::string_view& line, std::size_t begin, std::size_t end)
+void emit(std::ostream& str, const std::string_view& line, std::size_t begin, std::size_t end, bool trimwhitespace)
 {
     assert(end > begin);
+
+    if (trimwhitespace && std::isspace(line[begin]))
+    {
+        begin++;
+    }
+
     str << line.substr(begin, end - begin);
 }
 
@@ -43,7 +49,7 @@ const std::string& Yarn::YarnRunnerBase::findValue(const Yarn::Markup::Attribute
 
 void Yarn::YarnRunnerBase::setAttribCallbacks()
 {
-    this->attribCallbacks["select"] = [](std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
+    this->markupCallbacks["select"] = [](std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
     {
         const std::string& value = findValue(attrib);
 
@@ -71,7 +77,7 @@ void Yarn::YarnRunnerBase::setAttribCallbacks()
         }
     };
 
-    this->attribCallbacks["plural"] = [](std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
+    this->markupCallbacks["plural"] = [](std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
     {
         const std::string& value = findValue(attrib);
 
@@ -87,7 +93,7 @@ void Yarn::YarnRunnerBase::setAttribCallbacks()
         }
     };
 
-    this->attribCallbacks["ordinal"] = [](std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
+    this->markupCallbacks["ordinal"] = [](std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
     {
         const std::string& value = findValue(attrib);
 
@@ -120,35 +126,74 @@ void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn:
     std::size_t cursorIndex = 0;
     auto nextAttrib = attribs.attribs.begin();
 
+    // inline properties for processing the line markup:
+
+    // If a self - closing attribute has white - space before it, or it's at the start of the line, then it will trim a single whitespace after it. This means that the following text produces a plain text of "A B":
+    //  A[wave / ] B
+    //  If you don't want to trim whitespace, add a property trimwhitespace, set to false:
+    //  A[wave trimwhitespace = false / ] B
+    //  // (produces "A  B")
+    bool trimwhitespace = false; //
+
+    // nomarkup / nomarkup
+    // [nomarkup] Here's a big ol'[bunch of] characters, filled [[]] with square [[]brackets![/ nomarkup]
+    bool nomarkup = false;
+
     while (cursorIndex < line.length())
     {
+        // determine if we should enable trim white space
+        bool selfClosing = (nextAttrib->type == Yarn::Markup::Attribute::SELF_CLOSING);
+        bool startOfLine = nextAttrib->position == 0;
+
+        // this gets reset for each attribute, so it'll apply to the next (or not) and be consumed
+        trimwhitespace = selfClosing && (startOfLine || std::isspace(line[nextAttrib->position - 1]));
+
         if (nextAttrib == attribs.attribs.end())
         {
-            emit(sstr, line, cursorIndex, line.size());
+            emit(sstr, line, cursorIndex, line.size(), trimwhitespace);
             cursorIndex = line.size();
+
+            continue;
         }
-        else
+
+        // check for trimwhitespace override
+        std::unordered_map<std::string, std::string>::const_iterator it = it = nextAttrib->properties.find("trimwhitespace");
+        if (it != nextAttrib->properties.end())
+        {
+            if (it->second == "false")
+            {
+                trimwhitespace = false;
+            }
+        }
+
+        if (nextAttrib->name == "nomarkup")
+        {
+            nomarkup = (nextAttrib->type == Yarn::Markup::Attribute::OPEN);
+        }
+        
+        // we have an attribute to emit
         {
             std::size_t al = nextAttrib->length;
             std::size_t ap = nextAttrib->position;
 
-            if (ap - cursorIndex)
+            if (ap - cursorIndex) // emit unmarked characters up to the beginning of the attribute
             {
-                emit(sstr, line, cursorIndex, ap);
+                emit(sstr, line, cursorIndex, ap, trimwhitespace);
             }
 
             assert(al);
 
             if (al)
             {
-                auto it = attribCallbacks.find(nextAttrib->name);
-                if (it != attribCallbacks.end())
+                auto it = markupCallbacks.find(nextAttrib->name);
+                if ((!nomarkup) && it != markupCallbacks.end())
                 {
                     it->second(sstr, line, *nextAttrib);
                 }
                 else
                 {
-                    // -- unhandled markup attrib name --
+                    // -- unhandled markup attrib name or disabled markup : just emit the text --
+                    emit(sstr, line, ap, ap + al, false);
                 }
             }
 

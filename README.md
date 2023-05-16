@@ -5,9 +5,9 @@ Yarn Spinner is a neat scripting language for branching narrative that is simila
 
 https://yarnspinner.dev/
 
-This project is meant to be a standalone (non Unity, engine agnostic) C++ virtual machine that interprets the compiled Yarn script files.
+This project is meant to be a standalone (non Unity, engine agnostic) C++ virtual machine and dialogue player that interprets the compiled Yarn script files.
 
-The Github project for the original Yarn Spinner (which I'm entirely unaffiliated with) can be found here:
+The Github project for the original Yarn Spinner (not affiliated) can be found here:
 https://github.com/YarnSpinnerTool/YarnSpinner
 
 and an online sandbox to try the language can be found at:
@@ -29,18 +29,20 @@ I am using the following C++ CSV parser as an additional dependency:
 
 https://github.com/vincentlaucsb/csv-parser
 
-
 Additional Notes, differences from "real" Yarn Spinner:
-
-- Since this is C++ / engine agnostic, GUI is bring-your-own.
-- This logically includes all markup parsing, eg. as described here:
+- All the things mentioned in the tutorial at https://docs.yarnspinner.dev/getting-started/writing-in-yarn were implemented, tested, and should work; beyond that we have serialization including deterministic RNG.
+- Since this is C++ / engine agnostic, GUI / user interaction / event loops / threading / etc is bring-your-own.
+- This logically includes markup parsing beyond the built-in attributes, eg. as described here:
 https://docs.yarnspinner.dev/getting-started/writing-in-yarn/markup
-- character attribute, select, plurals, and ordinals as described on that same page feel more like a language feature / syntactic sugar but they aren't compiled to anything special in the .yarnc and are treated like any other markup.  This can be seen in how they don't seem to be supported in the current Try Yarnspinner sandbox or the VS code plugin.  I plan to add a "helper" / convenience function for processing these specific markups and add them to the "demo" dialog player.
+- See the demo in main.cpp for an example of how to extend the YarnRunnerBase class with a custom dialogue runner for your game
 - Built in operators and functions have been tested and implemented and should all work.
-- Commands and functions are implemented as std::function callbacks stored in a lookup table
+- Custom functions and markup callbacks are implemented as std::function callbacks stored in a lookup table
 - The sample command binding functionality is supplied via VirtuosoConsole's QuakeStyleConsole.h 
 https://github.com/VirtuosoChris/VirtuosoConsole
 which can take an arbitrary c++ function and do template magic to generate type correct iostream parsers without writing any code yourself.  But you can do whatever you want with commands, like pass them to a scripting language or whatever else you want.
+see instructions or main.cpp.  This also uses std::function in the implementation.
 - The VM state is serializable, and uses nlohmann's c++ JSON library as a dependency to do this:
 https://github.com/nlohmann/json
 - Tutorials, examples, and easy dependency fetching / building to come :)
+- the std::regex markup parsing should probably be replaced since std::regex is apparently not maintained and horribly slow.
+It's absolutely fine for now though.
