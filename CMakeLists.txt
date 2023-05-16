@@ -39,7 +39,7 @@ endif()
 
 if (BUILD_TEST)
 
-add_executable(YarnTest main.cpp)
+add_executable(YarnTest demo.cpp)
 target_link_libraries(YarnTest YarnMachineLib)
 
 if (CMAKE_GENERATOR MATCHES "Visual Studio")

@@ -14,7 +14,7 @@
  * implementing the callbacks, custom functions, and game commands to the function tables are the responsibility of the client code / dialogue runner
  * pumping the instruction queue is the responsibility of the client code / dialogue runner
  * The VM has built in json (de)serialization methods
- * See the public interface / members below, the base dialogue runner class in yarn_dialogue_runner.h, and the included demo console dialogue runner program in main.cpp for more
+ * See the public interface / members below, the base dialogue runner class in yarn_dialogue_runner.h, and the included demo console dialogue runner program in demo.cpp for more
  */
 
 #include <functional>

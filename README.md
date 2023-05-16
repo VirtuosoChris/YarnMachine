@@ -34,13 +34,13 @@ Additional Notes, differences from "real" Yarn Spinner:
 - Since this is C++ / engine agnostic, GUI / user interaction / event loops / threading / etc is bring-your-own.
 - This logically includes markup parsing beyond the built-in attributes, eg. as described here:
 https://docs.yarnspinner.dev/getting-started/writing-in-yarn/markup
-- See the demo in main.cpp for an example of how to extend the YarnRunnerBase class with a custom dialogue runner for your game
+- See the demo in demo.cpp for an example of how to extend the YarnRunnerBase class with a custom dialogue runner for your game
 - Built in operators and functions have been tested and implemented and should all work.
 - Custom functions and markup callbacks are implemented as std::function callbacks stored in a lookup table
 - The sample command binding functionality is supplied via VirtuosoConsole's QuakeStyleConsole.h 
 https://github.com/VirtuosoChris/VirtuosoConsole
 which can take an arbitrary c++ function and do template magic to generate type correct iostream parsers without writing any code yourself.  But you can do whatever you want with commands, like pass them to a scripting language or whatever else you want.
-see instructions or main.cpp.  This also uses std::function in the implementation.
+see instructions or demo.cpp.  This also uses std::function in the implementation.
 - The VM state is serializable, and uses nlohmann's c++ JSON library as a dependency to do this:
 https://github.com/nlohmann/json
 - Tutorials, examples, and easy dependency fetching / building to come :)
