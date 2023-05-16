@@ -6,6 +6,8 @@
 #include <yarn_markup.h>
 #include <yarn_spinner.pb.h>
 
+const std::string Yarn::YarnRunnerBase::CLOSE_ALL_ATTRIB = "Internal.CloseAll";
+
 void emit(std::ostream& str, const std::string_view& line, std::size_t begin, std::size_t end, bool trimwhitespace)
 {
     assert(end > begin);
@@ -170,7 +172,14 @@ void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn:
         {
             nomarkup = (nextAttrib->type == Yarn::Markup::Attribute::OPEN);
         }
-        
+
+        const bool isCloseAll = nextAttrib->type == Yarn::Markup::Attribute::CLOSE_ALL;
+        // peek for close all attribute and turn off nomarkup
+        if (isCloseAll)
+        {
+            nomarkup = false;
+        }
+
         // we have an attribute to emit
         {
             std::size_t al = nextAttrib->length;

@@ -9,6 +9,26 @@ void beep(int count)
     }
 }
 
+//WhAt DoEs ThIs FuNcTiOn Do?
+std::string makeSarcastic(const std::string_view& in)
+{
+    std::string rval;
+    rval.reserve(in.length());
+
+    for (int i = 0; i < in.length(); i++)
+    {
+        if (std::isalpha(in[i]) && (i % 2))
+        {
+            rval.push_back(std::toupper(in[i]));
+            continue;
+        }
+
+        rval.push_back(in[i]);
+    }
+
+    return rval;
+}
+
 /// A simple Yarn Dialogue Runner example that uses the console / cin / cout
 /// This shows the intended usage of this library.
 /// There are a lot of things that will be implementation dependent in your game / engine
@@ -21,9 +41,26 @@ void beep(int count)
 /// - handle markup properties
 struct YarnRunnerConsole : public Yarn::YarnRunnerBase
 {
+    bool sarcasm = false;
+
     YarnRunnerConsole()
     {
         setCommands();
+
+        this->markupCallbacks[CLOSE_ALL_ATTRIB] = 
+            [this](std::ostream&, const std::string_view&, const Yarn::Markup::Attribute&)
+        {
+            // close all markup callback
+            this->sarcasm = false;
+        };
+
+        this->markupCallbacks["sarcastic"] =
+            [this](std::ostream&, const std::string_view&, const Yarn::Markup::Attribute& attr)
+        {
+            // sarcastic markup
+            this->sarcasm = (attr.type == Yarn::Markup::Attribute::OPEN);
+        };
+
     }
 
     /// - this doesn't have to even be a member.  you could just access the command table member anywhere in your code and change
@@ -42,7 +79,15 @@ struct YarnRunnerConsole : public Yarn::YarnRunnerBase
     /// callback for when the Yarn runtime wants to present raw text - after doing variable substitution, markup, etc.
     void onReceiveText(const std::string_view& s) override
     {
-        std::cout << s << std::endl;
+        if (sarcasm)
+        {
+            std::cout << makeSarcastic(s) << std::endl;
+        }
+        else
+        {
+            std::cout << s << std::endl;
+        }
+
     }
 
     /// yarn vm callback for when the VM wants to present options to the player

@@ -40,6 +40,8 @@ namespace Yarn
             bool ignoreAllMarkup = false;
         };
 
+        const static std::string CLOSE_ALL_ATTRIB;
+
         Yarn::LineDatabase db;
         Yarn::YarnVM vm;
         Virtuoso::QuakeStyleConsole commands; ///< Use a c++ quake style console as a command parser / command provider
