@@ -1,19 +1,9 @@
-#include "yarn.h"
+#include <yarn_vm.h>
+#include <yarn_spinner.pb.h>
 
 #ifdef YARN_SERIALIZATION_JSON
 #include <json.hpp>
 #include <fstream>
-
-struct StaticContext
-{
-    StaticContext()
-    {
-    }
-    ~StaticContext()
-    {
-        google::protobuf::ShutdownProtobufLibrary();
-    }
-};
 
 namespace nlohmann
 {
@@ -85,6 +75,42 @@ namespace Yarn
 }
 
 #endif
+
+
+/// write all variables, types, and values to an ostream as key:value pairs, one variable per line
+inline std::ostream& Yarn::operator<<(std::ostream& str, const Yarn::Operand& op)
+{
+    if (op.has_bool_value())
+    {
+        str << op.bool_value();
+    }
+    else if (op.has_float_value())
+    {
+        str << op.float_value();
+    }
+    else if (op.has_string_value())
+    {
+        str << op.string_value();
+    }
+    else
+    {
+        // this should never happen
+        str << "UNDEFINED";
+    }
+
+    return str;
+}
+
+struct StaticContext
+{
+    StaticContext()
+    {
+    }
+    ~StaticContext()
+    {
+        google::protobuf::ShutdownProtobufLibrary();
+    }
+};
 
 
 using namespace Yarn;
@@ -682,6 +708,87 @@ void YarnVM::populateFuncs()
 
 }
 
+void YarnVM::setTime(long long timeIn)
+{
+    time = timeIn;
+
+    // check if sleep time is expired
+    if (runningState == ASLEEP && (time >= waitUntilTime)) { runningState = RUNNING; }
+}
+
+const Yarn::Instruction& YarnVM::currentInstruction()
+{
+    assert(currentNode);
+    auto instructionCtNode = currentNode->instructions_size();
+    assert(instructionCtNode > (instructionPointer));
+
+    return currentNode->instructions(instructionPointer);
+}
+
+void YarnVM::setInstruction(std::int32_t instruction)
+{
+    if (!currentNode)
+    {
+        YARN_EXCEPTION("current node is null in setInstruction()");
+    }
+
+    if (instruction >= currentNode->instructions_size())
+    {
+        YARN_EXCEPTION("Invalid instruction pointer parameter for setInstruction()");
+    }
+
+    instructionPointer = instruction;
+}
+
+
+YarnVM::YarnVM(const YarnVM::Settings& setts)
+    :
+    settings(setts),
+    generator(setts.randomSeed)
+{
+    static StaticContext sc;
+
+    populateFuncs();
+
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+}
+
+bool YarnVM::loadNode(const std::string& node)
+{
+    // node not found check
+    if (program.nodes().find(node) == program.nodes().end())
+    {
+        YARN_EXCEPTION("loadNode() failure : node not found : " + node);
+        return false;
+    }
+
+    const Yarn::Node& nodeRef = program.nodes().at(node);
+
+    const Yarn::Node* prevNode = currentNode;
+    currentNode = &nodeRef;
+    instructionPointer = 0;
+
+    if (callbacks) callbacks->onChangeNode(prevNode, currentNode);
+
+    return true;
+}
+
+
+bool YarnVM::loadProgram(const std::string& yarncFileIn)
+{
+    yarncFile = yarncFileIn;
+   
+    std::ifstream is(yarncFile, std::ios::binary | std::ios::in);
+
+    assert(is.is_open());
+
+    bool parsed = program.ParseFromIstream(&is);
+
+    this->variableStorage = std::unordered_map<std::string, Yarn::Operand>(program.initial_values().begin(), program.initial_values().end());
+
+    return parsed;
+}
+
 #ifdef YARN_SERIALIZATION_JSON
 
 void YarnVM::fromJS(const nlohmann::json& js)
@@ -707,7 +814,7 @@ void YarnVM::fromJS(const nlohmann::json& js)
 
     if (this->runningState == AWAITING_INPUT)
     {
-        this->callbacks.onShowOptions(this->currentOptionsList);
+        if (callbacks) callbacks->onPresentOptions(this->currentOptionsList);
     }
 }
 
@@ -771,83 +878,3 @@ void Yarn::YarnVM::Stack::from_json(const nlohmann::json& js)
 }
 #endif
 
-
-void YarnVM::setTime(long long timeIn)
-{
-    time = timeIn;
-
-    // check if sleep time is expired
-    if (runningState == ASLEEP && (time >= waitUntilTime)) { runningState = RUNNING; }
-}
-
-const Yarn::Instruction& YarnVM::currentInstruction()
-{
-    assert(currentNode);
-    auto instructionCtNode = currentNode->instructions_size();
-    assert(instructionCtNode > (instructionPointer));
-
-    return currentNode->instructions(instructionPointer);
-}
-
-void YarnVM::setInstruction(std::int32_t instruction)
-{
-    if (!currentNode)
-    {
-        YARN_EXCEPTION("current node is null in setInstruction()");
-    }
-
-    if (instruction >= currentNode->instructions_size())
-    {
-        YARN_EXCEPTION("Invalid instruction pointer parameter for setInstruction()");
-    }
-
-    instructionPointer = instruction;
-}
-
-
-YarnVM::YarnVM(const YarnVM::Settings& setts)
-    :
-    settings(setts),
-    generator(setts.randomSeed)
-{
-    static StaticContext sc;
-
-    populateFuncs();
-
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-}
-
-bool YarnVM::loadNode(const std::string& node)
-{
-    // node not found check
-    if (program.nodes().find(node) == program.nodes().end())
-    {
-        YARN_EXCEPTION("loadNode() failure : node not found : " + node);
-        return false;
-    }
-
-    const Yarn::Node& nodeRef = program.nodes().at(node);
-
-    currentNode = &nodeRef;
-    instructionPointer = 0;
-
-    callbacks.onChangeNode();
-
-    return true;
-}
-
-
-bool YarnVM::loadProgram(const std::string& yarncFileIn)
-{
-    yarncFile = yarncFileIn;
-   
-    std::ifstream is(yarncFile, std::ios::binary | std::ios::in);
-
-    assert(is.is_open());
-
-    bool parsed = program.ParseFromIstream(&is);
-
-    this->variableStorage = std::unordered_map<std::string, Yarn::Operand>(program.initial_values().begin(), program.initial_values().end());
-
-    return parsed;
-}

@@ -1,16 +1,5 @@
-#include "yarn.h"
-#include "yarn_line_database.h"
-
-#include <iostream>
-#include <fstream>
 #include <chrono>
-
-#include <QuakeStyleConsole.h>
-
-#include "yarn_util.h"
-
-#include "yarn_markup.h"
-
+#include <yarn_dialogue_runner.h>
 
 void beep(int count)
 {
@@ -24,30 +13,21 @@ void beep(int count)
 /// This shows the intended usage of this library.
 /// There are a lot of things that will be implementation dependent in your game / engine
 /// For example, dialogue display / formatting, control flow, command implementations, time, etc.
-/// So the intended usage is to have a runner class that:
-/// - Creates a Yarn VM that runs the .yarnc scripts, and signals a callback with commands, options, and line id's to run
-/// - Creates and populates a line database that is queried whenever the Yarn VM signals that a line of dialogue should run
-/// - handles input, processes and displays output, runs commands, and controls the "loop" of when the VM runs
-/// - controls serialization and deserialization of the VM state using the provided methods
+/// So the intended usage is to have a runner class that inherits from YarnRunnerBase and:
+/// - handles input
+/// - processes and displays output
+/// - controls the "loop" of when the VM runs
 /// - make c++ std::function bindings for (non-built-in) functions and vm callbacks
-struct YarnRunnerConsole
+/// - handle markup properties
+struct YarnRunnerConsole : public Yarn::YarnRunnerBase
 {
-    Yarn::LineDatabase db;
-    Yarn::YarnVM vm;
-    Virtuoso::QuakeStyleConsole commands; ///< Use a c++ quake style console as a command parser / command provider
-
-    std::string moduleName;
-
-    bool ignoreAllMarkup = false;
-
-    //std::unordered_map<Yarn::LineID, Yarn::Markup::LineAttributes> markup;
-
     YarnRunnerConsole()
     {
-        setCallbacks();
         setCommands();
     }
 
+    /// - this doesn't have to even be a member.  you could just access the command table member anywhere in your code and change
+    /// the bound commands however you like
     void setCommands()
     {
         // 2 built in commands in Yarn specification : wait, and stop
@@ -59,366 +39,35 @@ struct YarnRunnerConsole
         commands.bindMemberCommand("wait", vm, &Yarn::YarnVM::setWaitTime, "usage: wait <time>.  current time and time units determined by yarn dialogue runner.");
     }
 
-#ifdef YARN_SERIALIZATION_JSON
-    void save(const std::string& saveFile = "YarnVMSerialized.json")
+    /// callback for when the Yarn runtime wants to present raw text - after doing variable substitution, markup, etc.
+    void onReceiveText(const std::string_view& s) override
     {
-        nlohmann::json serialized;
-
-        serialized["vm"] = vm.toJS();
-        serialized["moduleName"] = moduleName;
-
-        std::ofstream outJS(saveFile);
-
-        outJS << std::setw(4) << serialized;
-
-        outJS.close();
+        std::cout << s << std::endl;
     }
 
-    void restore(const std::string& restoreFile = "YarnVMSerialized.json")
+    /// yarn vm callback for when the VM wants to present options to the player
+    void onPresentOptions(const Yarn::YarnVM::OptionsList& opts) override
     {
-        std::ifstream inJS(restoreFile);
-
-        nlohmann::json js = nlohmann::json::parse(inJS);
-
-        loadModuleLineDB(js["moduleName"].get<std::string>());
-
-        vm.fromJS(js["vm"]);
-
-        inJS.close();
-    }
-
-#endif
-
-    void showLine(const Yarn::YarnVM::Line& line)
-    {
-        std::string lineS;
-        if (!line.substitutions.size())
+        for (int i = 0; i < opts.size(); i++)
         {
-            lineS = db.lines[line.id].text;
-        }
-        else
-        {
-            lineS = Yarn::make_substitutions(db.lines[line.id].text, line.substitutions);
-        }
-
-        if (ignoreAllMarkup)
-        {
-            std::cout << lineS << std::endl;
-        }
-        else
-        {
-            // parse attributes from line text
-            Yarn::Markup::LineAttributes attr(lineS);
-            processLine(lineS, attr);
-        }
-    }
-
-    void emit(std::ostream& str, const std::string_view& line, std::size_t begin, std::size_t end)
-    {
-        assert(end > begin);
-        str << line.substr(begin, end - begin);
-    }
-
-    std::string getCardinalPluralClass(int value) const
-    {
-        /*
-        * plural classes can be:
-        one
-        two
-        few
-        many
-        other
-        * Not every language uses every category; for example, English only uses "one" and "other" for cardinal plural classes.
-        */
-
-        switch (value)
-        {
-        case 1: return "one";
-        case 2: return "other";
-        default: return "other";
-        }
-    }
-
-    std::string getOrdinalPluralClass(int value) const
-    {
-        if (value > 20)
-        {
-            value = value % 10;
-        }
-
-        switch (value)
-        {
-        case 1: return "one";
-        case 2: return "two";
-        case 3: return "few";
-        case 4: return "other";
-        default: return "other";
-        }
-    }
-
-    std::string getCardinalPluralClass(const std::string& val) const
-    {
-        return getCardinalPluralClass(std::stoi(val));;
-    }
-
-    std::string getOrdinalPluralClass(const std::string& val) const
-    {
-        return getOrdinalPluralClass(std::stoi(val));
-    }
-
-    const std::string& findValue(const Yarn::Markup::Attribute& attrib)
-    {
-        auto it = attrib.properties.find("value");
-
-        if (it != attrib.properties.end())
-        {
-            const std::string& value = it->second;
-            return value;
-        }
-        else
-        {
-            throw YarnException("select attribute missing value property");
-        }
-    }
-
-    void replace(std::ostream& str, const std::string& s, const std::string& repl, const char x='%')
-    {
-        size_t cursor = 0;
-        size_t pos;
-        while ((pos = s.find(x, cursor)) != std::string::npos)
-        {
-            str << std::string_view(&s[cursor], pos - cursor);
-            str << repl;
-            cursor = pos + 1;
-        }
-
-        str << std::string_view(&s[cursor], s.size() - cursor);
-    }
-
-    void handleAttrib(std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
-    {
-        if (attrib.name == "select")
-        {
-            const std::string& value = findValue(attrib);
-
-            auto it = attrib.properties.find(value);
-
-            if (it != attrib.properties.end())
+            if (opts[i].enabled)
             {
-                //str << it->second;
-                replace(str, it->second, value, '%');
-            }
-            else
-            {
-                // using other as fallback like in the plurals
-                auto it = attrib.properties.find("other");
-                if (it != attrib.properties.end())
-                {
-                    //str << it->second;
-
-                    replace(str, it->second, value, '%');
-                }
-                else
-                {
-                    throw YarnException("Unable to resolve value for select markup");
-                }
-            }
-        }
-        else if (attrib.name == "plural")
-        {
-
-            const std::string& value = findValue(attrib);
-
-            auto it = attrib.properties.find(getCardinalPluralClass(value));
-
-            if (it != attrib.properties.end())
-            {
-                //str << it->second;
-
-                replace(str, it->second, value, '%');
-            }
-            else
-            {
-                throw YarnException("Unable to resolve value for plural markup");
-            }
-        }
-        else if (attrib.name == "ordinal")
-        {
-            const std::string& value = findValue(attrib);
-
-            auto it = attrib.properties.find(getOrdinalPluralClass(value));
-
-            if (it != attrib.properties.end())
-            {
-                //str << it->second;
-
-                replace(str, it->second, value, '%');
-            }
-            else
-            {
-                throw YarnException("Unable to resolve value for ordinal markup");
-            }
-        }
-    }
-
-    void processLine(const std::string_view& line, const Yarn::Markup::LineAttributes& attribs)
-    {
-        std::stringstream sstr;
-
-        std::size_t cursorIndex = 0;
-        auto nextAttrib = attribs.attribs.begin();
-
-        while (cursorIndex < line.length())
-        {
-            if (nextAttrib == attribs.attribs.end())
-            {
-                emit(sstr, line, cursorIndex, line.size());
-                cursorIndex = line.size();
-            }
-            else
-            {
-                std::size_t al = nextAttrib->length;
-                std::size_t ap = nextAttrib->position;
-
-                if (ap - cursorIndex)
-                {
-                    emit(sstr, line, cursorIndex, ap);
-                }
-
-                assert(al);
-                if (al)
-                {
-                    handleAttrib(sstr, line, *nextAttrib);
-                }
-
-                // handle attrib;
-                assert((al + ap) > cursorIndex);
-                cursorIndex = al + ap; // advance cursor to after the attribute we just handled
-
-                nextAttrib++;
+                std::cout << '\t' << (i + 1) << ") ";
+                onRunLine(opts[i].line);
             }
         }
 
-        std::cout << sstr.str() << std::endl;
+        int lineIndex = 0;
+
+        /// -- should actually do input string validation.  won't be using a cin input irl, so nbd for now
+        std::cin >> lineIndex;
+
+        lineIndex -= 1; // zero offset on cin
+
+        vm.selectOption(lineIndex);
     }
 
-    void loadModuleLineDB(const std::string& moduleName)
-    {
-        const std::string testLinesCSV = moduleName + "-Lines.csv";
-        const std::string testMetaCSV = moduleName + "-Metadata.csv";
-
-        db.loadLines(testLinesCSV);
-        db.loadMetadata(testMetaCSV);
-
-#if _DEBUG
-        std::cout << "Loading lines from : " << testLinesCSV << std::endl;
-        std::cout << "Line database total lines : " << db.lineCount() << std::endl;
-        std::cout << "Line database size (bytes) : " << db.sizeBytes() << std::endl;
-        std::cout << "Time spent in parsing (ms) : " << db.parsingTime << std::endl;
-#endif
-    }
-
-    void loadModule(const std::string& mod, const std::string& startNode = "Start")
-    {
-        moduleName = mod;
-
-        const std::string yarncFile = moduleName + ".yarnc";
-
-        loadModuleLineDB(mod);
-        vm.loadProgram(yarncFile);
-
-        // find the start node
-        auto it = vm.program.nodes().begin();
-        if ((it = vm.program.nodes().find(startNode)) != vm.program.nodes().end())
-        {
-            const Yarn::Node& startnode = it->second;
-
-            vm.loadNode(startNode);
-        }
-    }
-
-    void setCallbacks()
-    {
-        vm.callbacks.onCommand = [this](const std::string& command)
-        {
-            std::cout << "command : " << command << std::endl;
-
-            this->commands.commandExecute(command, std::cout);
-        };
-
-        vm.callbacks.onLine = [this](const Yarn::YarnVM::Line& line)
-        {
-#if _DEBUG
-
-            std::cout << "Running line " << line.id;
-
-            if (db.tags[line.id].size())
-            {
-                std::cout << " With tags : \n";
-
-                for (auto& tag : db.tags[line.id])
-                {
-                    std::cout << '\t' << tag << '\n';
-                }
-            }
-            std::cout << std::endl;
-#endif
-
-            showLine(line);
-        };
-
-#if _DEBUG
-
-        vm.callbacks.onChangeNode = [this]()
-        {
-            assert(vm.currentNode);
-            std::cout << "Entering node : " << vm.currentNode->name();
-            if (vm.currentNode->tags_size())
-            {
-                std::cout << " with tags:\n";
-
-                for (auto& x : this->vm.currentNode->tags())
-                {
-                    std::cout << '\t' << x << '\n';
-                }
-            }
-
-            if (vm.currentNode->headers_size())
-            {
-                std::cout << ", with headers\n";
-
-                for (auto& x : vm.currentNode->headers())
-                {
-                    std::cout << '\t' << x.key() << ' ' << x.value() << '\n';
-                }
-            }
-            std::cout << std::endl;
-        };
-#endif
-
-        vm.callbacks.onShowOptions = [this](const Yarn::YarnVM::OptionsList& opts)
-        {
-            for (int i = 0; i < opts.size(); i++)
-            {
-                if (opts[i].enabled)
-                {
-                    std::cout << '\t' << (i + 1) << ") ";
-                    showLine(opts[i].line);
-                }
-
-                /// -- should actually do input string validation.  won't be using a cin input irl, so nbd for now
-            }
-
-            int lineIndex = 0;
-
-            std::cin >> lineIndex;
-
-            lineIndex -= 1; // zero offset on cin
-
-            vm.selectOption(lineIndex);
-        };
-    }
-
+    /// handle the main loop, processing instructions, updating the time, etc.
     void loop()
     {
         const Yarn::Instruction& inst = vm.currentInstruction();
@@ -451,35 +100,6 @@ struct YarnRunnerConsole
                 return;
             }
         }
-    }
-
-    /// write all variables, types, and values to an ostream as key:value pairs, one variable per line
-    std::ostream& logVariables(std::ostream& str)
-    {
-        for (auto it = vm.variableStorage.begin(); it != vm.variableStorage.end(); it++)
-        {
-            str << "name:" << it->first << "\ttype:";
-
-            if (it->second.has_bool_value())
-            {
-                str << "bool\tvalue:" << it->second.bool_value() << '\n';
-            }
-            else if (it->second.has_float_value())
-            {
-                str << "float\tvalue:" << it->second.float_value() << '\n';
-            }
-            else if (it->second.has_string_value())
-            {
-                str << "string\tvalue:" << it->second.string_value() << '\n';
-            }
-            else
-            {
-                // this should never happen
-                str << "UNDEFINED\tvalue:UNDEFINED\n";
-            }
-        }
-
-        return str;
     }
 };
 

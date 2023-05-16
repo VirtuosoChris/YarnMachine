@@ -1,4 +1,5 @@
-#include "yarn.h"
+#include <yarn_vm.h>
+#include <yarn_spinner.pb.h>
 
 using namespace Yarn;
 
@@ -64,13 +65,13 @@ void YarnVM::processInstruction(const Yarn::Instruction& instruction)
             variableStack.pop();
         }
 
-        callbacks.onLine(l);
+        if (callbacks) callbacks->onRunLine(l);
     }
     break;
     case Yarn::Instruction_OpCode_RUN_COMMAND:
     {
         const std::string& commandText = get_string_operand(instruction, 0);
-        callbacks.onCommand(commandText);
+        if (callbacks) callbacks->onRunCommand(commandText);
     }
     break;
     case Yarn::Instruction_OpCode_ADD_OPTION:
@@ -86,7 +87,6 @@ void YarnVM::processInstruction(const Yarn::Instruction& instruction)
 
         bool enabled = true;
         std::vector<Yarn::Operand> substitutions;
-
 
         int substitutionsCt = (int)get_float_operand(instruction, 2);
 
@@ -142,7 +142,7 @@ void YarnVM::processInstruction(const Yarn::Instruction& instruction)
 
         runningState = AWAITING_INPUT;
 
-        callbacks.onShowOptions(currentOptionsList);
+        if (callbacks) callbacks->onPresentOptions(currentOptionsList);
     }
     break;
     case Yarn::Instruction_OpCode_PUSH_STRING:
@@ -281,7 +281,7 @@ void YarnVM::processInstruction(const Yarn::Instruction& instruction)
     {
         runningState = STOPPED;
 
-        callbacks.onProgramStopped();
+        if (callbacks) callbacks->onProgramStopped();
 
         return;
     }

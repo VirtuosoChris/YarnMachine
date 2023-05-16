@@ -1,5 +1,22 @@
 #pragma once
 
+/**
+ * @file yarn_vm.h
+ *
+ * @brief Yarn Spinner C++ Class for running compiled .yarnc files on a virtual machine
+ *
+ * @author Christopher Pugh
+ * Contact: chris@virtuosoengine.com
+ *
+ * A yarn virtual machine intended to be used with a Yarn Dialogue runner class.
+ * This runs a .yarnc file of path provided to the loadProgram() method
+ * it has callbacks for different events, such as running a line, running a command, changing nodes, showing options, etc.
+ * implementing the callbacks, custom functions, and game commands to the function tables are the responsibility of the client code / dialogue runner
+ * pumping the instruction queue is the responsibility of the client code / dialogue runner
+ * The VM has built in json (de)serialization methods
+ * See the public interface / members below, the base dialogue runner class in yarn_dialogue_runner.h, and the included demo console dialogue runner program in main.cpp for more
+ */
+
 #include <functional>
 #include <stack>
 #include <iostream>
@@ -13,18 +30,16 @@
 
 #define YarnException std::runtime_error
 
-#define NIL_CALLBACK [](){}
 #define YARN_EXCEPTION(x) if (settings.enableExceptions) { throw YarnException( x ); }
 
-/// A yarn virtual machine intended to be used with a custom Yarn Dialogue runner.
-/// This runs a .yarnc file of path provided to the loadProgram() method
-/// it has callbacks for different events, such as running a line, running a command, changing nodes, showing options, etc.
-/// Binding callbacks, custom functions, and game commands to the function tables are the responsibility of the client code
-/// pumping the instruction queue is the responsibility of the client code
-/// See the public interface / members below and the included demo console dialogue runner program for more
-/// The VM has built in json (de)serialization methods
 namespace Yarn
 {
+    class Operand;
+    class Node;
+    class Instruction;
+    class Program;
+
+    inline std::ostream& operator<<(std::ostream& str, const Yarn::Operand& op);
 
 struct YarnVM
 {
@@ -61,27 +76,32 @@ struct YarnVM
 #endif
     };
 
-
-    typedef std::function<void(void)> YarnCallback;
     typedef std::function<Yarn::Operand(YarnVM& yarn, int parameterCount)> YarnFunction;
     typedef std::vector<Option> OptionsList;
 
     /// Current State of the VM
     enum RunningState { RUNNING, STOPPED, AWAITING_INPUT, ASLEEP};
 
-    #define YARN_CALLBACK(name) YarnCallback name = NIL_CALLBACK;
     #define YARN_FUNC(x) functions[ x ] = [](YarnVM& yarn, int parameters)->Yarn::Operand
 
     /// User bindable callbacks available to the VM.
     struct YarnCallbacks
     {
-        YARN_CALLBACK(onProgramStopped);
-        YARN_CALLBACK(onChangeNode);
+        // -- mandatory implementation by caller --
+        virtual void onRunLine(const YarnVM::Line&) = 0;
+        virtual void onRunCommand(const std::string&) = 0;
+        virtual void onPresentOptions(const OptionsList&) = 0;
 
-        std::function<void(const YarnVM::Line&)> onLine = [](const YarnVM::Line& line) {};
-        std::function<void(const std::string&)> onCommand = [](const std::string&) {};
-        std::function<void(const OptionsList&)> onShowOptions = [](const OptionsList&) {};
+        // -- additional helper callbacks, default no-op --
+
+        virtual void onProgramStopped() {};
+        virtual void onChangeNode(const Yarn::Node* fromNode, const Yarn::Node* toNode) {};
     };
+
+    void setCallbacks(YarnCallbacks* callbacks)
+    {
+        this->callbacks = callbacks;
+    }
 
     /// --- VM state members which are serializable! ---
 
@@ -116,23 +136,12 @@ struct YarnVM
     // the program is derived from the yarnc filename in the deserialization function
 
     std::unordered_map<std::string, YarnFunction> functions;
-    YarnCallbacks callbacks;
+    YarnCallbacks* callbacks = nullptr;
     Yarn::Program program;
 
     // --- Public method interface below.  Called by your Dialogue Runner class which owns this VM ---
 
     YarnVM(const Settings& setts = {});
-
-#ifdef YARN_SERIALIZATION_JSON
-
-    /// deserializes the static state of the VM from a json input.
-    /// loads the node, which causes the node change callback to fire
-    /// if we were in an awaiting input state, we fire the callback to present options
-    void fromJS(const nlohmann::json& js);
-
-    nlohmann::json toJS() const;
-
-#endif
 
     bool loadNode(const std::string& node);
 
@@ -160,7 +169,18 @@ struct YarnVM
 
     unsigned int visitedCount(const std::string& node); ///< how many times has a node been entered/exited during execution
 
-    protected: // internal helper methods
+#ifdef YARN_SERIALIZATION_JSON
+
+    /// deserializes the static state of the VM from a json input.
+    /// loads the node, which causes the node change callback to fire
+    /// if we were in an awaiting input state, we fire the callback to present options
+    void fromJS(const nlohmann::json& js);
+
+    nlohmann::json toJS() const;
+
+#endif
+
+protected: // internal helper methods
 
     void populateFuncs();
 

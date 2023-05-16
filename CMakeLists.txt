@@ -6,18 +6,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 add_library(YarnMachineLib
-yarn.h
-yarn.cpp
+yarn_vm.h
+yarn_vm.cpp
 yarn_instructions.cpp
-yarn_util.cpp
-yarn_util.h
 yarn_line_database.h
+yarn_line_database.cpp
 yarn_markup.h
+yarn_markup.cpp
+yarn_dialogue_runner.h
+yarn_dialogue_runner.cpp
 generated/yarn_spinner.pb.cc
 generated/yarn_spinner.pb.h
 )
 
 target_include_directories(YarnMachineLib PUBLIC ./install/include)
+target_include_directories(YarnMachineLib PUBLIC ./)
 target_include_directories(YarnMachineLib PUBLIC ./depends)
 target_include_directories(YarnMachineLib PUBLIC ./generated)
 target_link_directories(YarnMachineLib PUBLIC ./install/lib)
