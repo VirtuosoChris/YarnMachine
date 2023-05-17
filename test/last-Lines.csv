@@ -1,0 +1,10 @@
+id,text,file,node,lineNumber
+line:C:\Users\chris\GitHub\YarnMachine\test\last.yarn-Start-0,"Chris: Wanna see what nomarkup looks like? [nomarkup] Here's a big ol'[bunch of] characters, filled [[]] with square [[]brackets![/ nomarkup]",C:\Users\chris\GitHub\YarnMachine\test\last.yarn,Start,5
+line:C:\Users\chris\GitHub\YarnMachine\test\last.yarn-Start-1,"Chris: To do it, just use the [nomarkup] [nomarkup] [/ nomarkup] tag",C:\Users\chris\GitHub\YarnMachine\test\last.yarn,Start,6
+line:C:\Users\chris\GitHub\YarnMachine\test\last.yarn-Start-2,"Chris: [sarcasm]Wow, that's so hard![/]. Right?",C:\Users\chris\GitHub\YarnMachine\test\last.yarn,Start,7
+line:C:\Users\chris\GitHub\YarnMachine\test\last.yarn-Start-3,"Player2: [sharcasm]Wow, I think I'll never get that![/sharcasm]",C:\Users\chris\GitHub\YarnMachine\test\last.yarn,Start,9
+line:C:\Users\chris\GitHub\YarnMachine\test\last.yarn-Start-4,Chris: I'm not quite sure you get the hang of [sarcasm]sarcasm[/sarcasm].  Keep practicing.,C:\Users\chris\GitHub\YarnMachine\test\last.yarn,Start,10
+line:C:\Users\chris\GitHub\YarnMachine\test\last.yarn-Start-5,The following line should do the whitespace trimming thing:,C:\Users\chris\GitHub\YarnMachine\test\last.yarn,Start,12
+line:C:\Users\chris\GitHub\YarnMachine\test\last.yarn-Start-6,A [nomarkup/] B,C:\Users\chris\GitHub\YarnMachine\test\last.yarn,Start,13
+line:C:\Users\chris\GitHub\YarnMachine\test\last.yarn-Start-7,And this one should not!,C:\Users\chris\GitHub\YarnMachine\test\last.yarn,Start,15
+line:C:\Users\chris\GitHub\YarnMachine\test\last.yarn-Start-8,A [nomarkup trimwhitespace=false/] B,C:\Users\chris\GitHub\YarnMachine\test\last.yarn,Start,16
