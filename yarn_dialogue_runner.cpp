@@ -131,9 +131,9 @@ void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn:
     // inline properties for processing the line markup:
 
     // If a self - closing attribute has white - space before it, or it's at the start of the line, then it will trim a single whitespace after it. This means that the following text produces a plain text of "A B":
-    //  A[wave / ] B
+    //  A [wave / ] B
     //  If you don't want to trim whitespace, add a property trimwhitespace, set to false:
-    //  A[wave trimwhitespace = false / ] B
+    //  A [wave trimwhitespace = false / ] B
     //  // (produces "A  B")
     bool trimwhitespace = false; //
 
@@ -143,13 +143,6 @@ void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn:
 
     while (cursorIndex < line.length())
     {
-        // determine if we should enable trim white space
-        bool selfClosing = (nextAttrib->type == Yarn::Markup::Attribute::SELF_CLOSING);
-        bool startOfLine = nextAttrib->position == 0;
-
-        // this gets reset for each attribute, so it'll apply to the next (or not) and be consumed
-        trimwhitespace = selfClosing && (startOfLine || std::isspace(line[nextAttrib->position - 1]));
-
         if (nextAttrib == attribs.attribs.end())
         {
             emit(sstr, line, cursorIndex, line.size(), trimwhitespace);
@@ -157,6 +150,14 @@ void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn:
 
             continue;
         }
+
+        // determine if we should enable trim white space
+        bool selfClosing = (nextAttrib->type == Yarn::Markup::Attribute::SELF_CLOSING);
+        bool startOfLine = nextAttrib->position == 0;
+
+        // this gets reset for each attribute, so it'll apply to the next (or not) and be consumed
+        trimwhitespace = selfClosing && (startOfLine || std::isspace(line[nextAttrib->position - 1]));
+
 
         // check for trimwhitespace override
         std::unordered_map<std::string, std::string>::const_iterator it = it = nextAttrib->properties.find("trimwhitespace");
