@@ -160,10 +160,17 @@ void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn:
 
 
         // check for trimwhitespace override
-        std::unordered_map<std::string, std::string>::const_iterator it = it = nextAttrib->properties.find("trimwhitespace");
+        std::unordered_map<std::string, std::string>::const_iterator it = nextAttrib->properties.find("trimwhitespace");
         if (it != nextAttrib->properties.end())
         {
             if (it->second == "false")
+            {
+                trimwhitespace = false;
+            }
+        }
+        else // make plurals, ordinals, and select default to trimwhitespace if not otherwise specified for consistency with examples
+        {
+            if ((nextAttrib->name == "select") || (nextAttrib->name == "plural") || (nextAttrib->name == "ordinal"))
             {
                 trimwhitespace = false;
             }
