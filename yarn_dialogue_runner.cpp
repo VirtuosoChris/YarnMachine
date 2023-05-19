@@ -51,6 +51,11 @@ const std::string& Yarn::YarnRunnerBase::findValue(const Yarn::Markup::Attribute
 
 void Yarn::YarnRunnerBase::setAttribCallbacks()
 {
+    this->markupCallbacks["nomarkup"] = [this](std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
+    {
+        this->setts.nomarkup = attrib.type == Yarn::Markup::Attribute::OPEN;
+    };
+
     this->markupCallbacks["select"] = [](std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
     {
         const std::string& value = findValue(attrib);
@@ -139,7 +144,7 @@ void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn:
 
     // nomarkup / nomarkup
     // [nomarkup] Here's a big ol'[bunch of] characters, filled [[]] with square [[]brackets![/ nomarkup]
-    bool nomarkup = false;
+    // bool nomarkup = false;
 
     while (cursorIndex < line.length())
     {
@@ -176,16 +181,23 @@ void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn:
             }
         }
 
+        /*
         if (nextAttrib->name == "nomarkup")
         {
             nomarkup = (nextAttrib->type == Yarn::Markup::Attribute::OPEN);
-        }
+        }*/
 
         const bool isCloseAll = nextAttrib->type == Yarn::Markup::Attribute::CLOSE_ALL;
+
         // peek for close all attribute and turn off nomarkup
         if (isCloseAll)
         {
-            nomarkup = false;
+            setts.nomarkup = false;
+        }
+
+        if ((nextAttrib->type == Yarn::Markup::Attribute::CLOSE) && (nextAttrib->name == "nomarkup"))
+        {
+            setts.nomarkup = false;
         }
 
         // we have an attribute to emit
@@ -202,12 +214,13 @@ void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn:
 
             if (al)
             {
-                auto it = markupCallbacks.find(nextAttrib->name);
-                if ((!nomarkup) && it != markupCallbacks.end())
+                auto it = isCloseAll ? markupCallbacks.find(CLOSE_ALL_ATTRIB) : markupCallbacks.find(nextAttrib->name);
+
+                if ((!setts.nomarkup) && it != markupCallbacks.end())
                 {
                     it->second(sstr, line, *nextAttrib);
                 }
-                else
+                else if (setts.emitUnhandledMarkup || setts.nomarkup)
                 {
                     // -- unhandled markup attrib name or disabled markup : just emit the text --
                     emit(sstr, line, ap, ap + al, false);
@@ -303,7 +316,7 @@ void Yarn::YarnRunnerBase::onRunLine(const Yarn::YarnVM::Line& line)
         lineS = make_substitutions(db.lines[line.id].text, line.substitutions);
     }
 
-    if (setts.ignoreAllMarkup)
+    if (setts.alwaysIgnoreMarkup)
     {
         onReceiveText(lineS);
     }

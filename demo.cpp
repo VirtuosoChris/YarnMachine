@@ -54,7 +54,7 @@ struct YarnRunnerConsole : public Yarn::YarnRunnerBase
             this->sarcasm = false;
         };
 
-        this->markupCallbacks["sarcastic"] =
+        this->markupCallbacks["sarcasm"] =
             [this](std::ostream&, const std::string_view&, const Yarn::Markup::Attribute& attr)
         {
             // sarcastic markup
@@ -79,6 +79,8 @@ struct YarnRunnerConsole : public Yarn::YarnRunnerBase
     /// callback for when the Yarn runtime wants to present raw text - after doing variable substitution, markup, etc.
     void onReceiveText(const std::string_view& s) override
     {
+        std::cout << s << std::endl;
+#if 0
         if (sarcasm)
         {
             std::cout << makeSarcastic(s) << std::endl;
@@ -87,7 +89,7 @@ struct YarnRunnerConsole : public Yarn::YarnRunnerBase
         {
             std::cout << s << std::endl;
         }
-
+#endif
     }
 
     /// yarn vm callback for when the VM wants to present options to the player

@@ -37,7 +37,9 @@ namespace Yarn
     {
         struct Settings
         {
-            bool ignoreAllMarkup = false;
+            bool alwaysIgnoreMarkup = false;    ///< always ignore all markup and treat it as raw text
+            bool nomarkup = false;              ///< is the built in nomarkup attribute toggled
+            bool emitUnhandledMarkup = true;    ///< spits out markup with an unhandled / unknown attrib identifier as part of the line.  set to false to omit that text instead
         };
 
         const static std::string CLOSE_ALL_ATTRIB;
