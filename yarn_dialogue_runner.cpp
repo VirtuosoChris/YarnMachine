@@ -8,7 +8,7 @@
 
 const std::string Yarn::YarnRunnerBase::CLOSE_ALL_ATTRIB = "Internal.CloseAll";
 
-void emit(std::ostream& str, const std::string_view& line, std::size_t begin, std::size_t end, bool trimwhitespace)
+std::string_view emit(const std::string_view& line, std::size_t begin, std::size_t end, bool trimwhitespace)
 {
     assert(end > begin);
 
@@ -17,21 +17,21 @@ void emit(std::ostream& str, const std::string_view& line, std::size_t begin, st
         begin++;
     }
 
-    str << line.substr(begin, end - begin);
+    return line.substr(begin, end - begin);
 }
 
-void replace(std::ostream& str, const std::string& s, const std::string& repl, const char x = '%')
+void Yarn::YarnRunnerBase::replace(const std::string& s, const std::string& repl, const char x)
 {
     size_t cursor = 0;
     size_t pos;
     while ((pos = s.find(x, cursor)) != std::string::npos)
     {
-        str << std::string_view(&s[cursor], pos - cursor);
-        str << repl;
+        onReceiveText(std::string_view(&s[cursor], pos - cursor));
+        onReceiveText(repl);
         cursor = pos + 1;
     }
 
-    str << std::string_view(&s[cursor], s.size() - cursor);
+    onReceiveText(std::string_view(&s[cursor], s.size() - cursor));
 }
 
 const std::string& Yarn::YarnRunnerBase::findValue(const Yarn::Markup::Attribute& attrib)
@@ -51,12 +51,12 @@ const std::string& Yarn::YarnRunnerBase::findValue(const Yarn::Markup::Attribute
 
 void Yarn::YarnRunnerBase::setAttribCallbacks()
 {
-    this->markupCallbacks["nomarkup"] = [this](std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
+    this->markupCallbacks["nomarkup"] = [this](const std::string_view& line, const Yarn::Markup::Attribute& attrib)
     {
         this->setts.nomarkup = attrib.type == Yarn::Markup::Attribute::OPEN;
     };
 
-    this->markupCallbacks["select"] = [](std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
+    this->markupCallbacks["select"] = [this](const std::string_view& line, const Yarn::Markup::Attribute& attrib)
     {
         const std::string& value = findValue(attrib);
 
@@ -65,7 +65,7 @@ void Yarn::YarnRunnerBase::setAttribCallbacks()
         if (it != attrib.properties.end())
         {
             //str << it->second;
-            replace(str, it->second, value, '%');
+            replace(it->second, value, '%');
         }
         else
         {
@@ -75,7 +75,7 @@ void Yarn::YarnRunnerBase::setAttribCallbacks()
             {
                 //str << it->second;
 
-                replace(str, it->second, value, '%');
+                replace(it->second, value, '%');
             }
             else
             {
@@ -84,7 +84,7 @@ void Yarn::YarnRunnerBase::setAttribCallbacks()
         }
     };
 
-    this->markupCallbacks["plural"] = [](std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
+    this->markupCallbacks["plural"] = [this](const std::string_view& line, const Yarn::Markup::Attribute& attrib)
     {
         const std::string& value = findValue(attrib);
 
@@ -92,7 +92,7 @@ void Yarn::YarnRunnerBase::setAttribCallbacks()
 
         if (it != attrib.properties.end())
         {
-            replace(str, it->second, value, '%');
+            replace(it->second, value, '%');
         }
         else
         {
@@ -100,7 +100,7 @@ void Yarn::YarnRunnerBase::setAttribCallbacks()
         }
     };
 
-    this->markupCallbacks["ordinal"] = [](std::ostream& str, const std::string_view& line, const Yarn::Markup::Attribute& attrib)
+    this->markupCallbacks["ordinal"] = [this](const std::string_view& line, const Yarn::Markup::Attribute& attrib)
     {
         const std::string& value = findValue(attrib);
 
@@ -110,7 +110,7 @@ void Yarn::YarnRunnerBase::setAttribCallbacks()
         {
             //str << it->second;
 
-            replace(str, it->second, value, '%');
+            replace(it->second, value, '%');
         }
         else
         {
@@ -128,8 +128,6 @@ Yarn::YarnRunnerBase::YarnRunnerBase()
 
 void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn::Markup::LineAttributes& attribs)
 {
-    std::stringstream sstr;
-
     std::size_t cursorIndex = 0;
     auto nextAttrib = attribs.attribs.begin();
 
@@ -150,7 +148,7 @@ void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn:
     {
         if (nextAttrib == attribs.attribs.end())
         {
-            emit(sstr, line, cursorIndex, line.size(), trimwhitespace);
+            onReceiveText(emit(line, cursorIndex, line.size(), trimwhitespace));
             cursorIndex = line.size();
 
             continue;
@@ -207,7 +205,7 @@ void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn:
 
             if (ap - cursorIndex) // emit unmarked characters up to the beginning of the attribute
             {
-                emit(sstr, line, cursorIndex, ap, trimwhitespace);
+                onReceiveText(emit(line, cursorIndex, ap, trimwhitespace));
             }
 
             assert(al);
@@ -218,12 +216,12 @@ void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn:
 
                 if ((!setts.nomarkup) && it != markupCallbacks.end())
                 {
-                    it->second(sstr, line, *nextAttrib);
+                    it->second(line, *nextAttrib);
                 }
                 else if (setts.emitUnhandledMarkup || setts.nomarkup)
                 {
                     // -- unhandled markup attrib name or disabled markup : just emit the text --
-                    emit(sstr, line, ap, ap + al, false);
+                    onReceiveText(emit(line, ap, ap + al, false));
                 }
             }
 
@@ -235,7 +233,7 @@ void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn:
         }
     }
 
-    onReceiveText(sstr.str());
+    onReceiveText("", true);
 }
 
 

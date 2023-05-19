@@ -48,14 +48,14 @@ struct YarnRunnerConsole : public Yarn::YarnRunnerBase
         setCommands();
 
         this->markupCallbacks[CLOSE_ALL_ATTRIB] = 
-            [this](std::ostream&, const std::string_view&, const Yarn::Markup::Attribute&)
+            [this](const std::string_view&, const Yarn::Markup::Attribute&)
         {
             // close all markup callback
             this->sarcasm = false;
         };
 
         this->markupCallbacks["sarcasm"] =
-            [this](std::ostream&, const std::string_view&, const Yarn::Markup::Attribute& attr)
+            [this](const std::string_view&, const Yarn::Markup::Attribute& attr)
         {
             // sarcastic markup
             this->sarcasm = (attr.type == Yarn::Markup::Attribute::OPEN);
@@ -76,20 +76,19 @@ struct YarnRunnerConsole : public Yarn::YarnRunnerBase
         commands.bindMemberCommand("wait", vm, &Yarn::YarnVM::setWaitTime, "usage: wait <time>.  current time and time units determined by yarn dialogue runner.");
     }
 
-    /// callback for when the Yarn runtime wants to present raw text - after doing variable substitution, markup, etc.
-    void onReceiveText(const std::string_view& s) override
+    /// callback for when the Yarn runtime wants to present raw text
+    void onReceiveText(const std::string_view& s, bool eol = false) override
     {
-        std::cout << s << std::endl;
-#if 0
         if (sarcasm)
         {
-            std::cout << makeSarcastic(s) << std::endl;
+            std::cout << makeSarcastic(s);// << std::endl;
         }
         else
         {
-            std::cout << s << std::endl;
+            std::cout << s;// << std::endl;
         }
-#endif
+
+        if (eol) std::cout << std::endl;
     }
 
     /// yarn vm callback for when the VM wants to present options to the player

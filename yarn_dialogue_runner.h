@@ -48,8 +48,8 @@ namespace Yarn
         Yarn::YarnVM vm;
         Virtuoso::QuakeStyleConsole commands; ///< Use a c++ quake style console as a command parser / command provider
 
-        // args are string stream to write output line text to, string view of line text, and markup attribute data
-        typedef std::function<void(std::ostream&, const std::string_view&, const Yarn::Markup::Attribute&)> AttribCallback;
+        // args are string view of line text, and markup attribute data
+        typedef std::function<void(const std::string_view&, const Yarn::Markup::Attribute&)> AttribCallback;
 
         std::unordered_map<std::string, AttribCallback> markupCallbacks;
 
@@ -59,10 +59,12 @@ namespace Yarn
 
         YarnRunnerBase();
 
-        virtual void onReceiveText(const std::string_view& s) = 0;
+        virtual void onReceiveText(const std::string_view& s, bool eol = false) = 0;
 
         void onRunLine(const Yarn::YarnVM::Line& line) override;
         void onRunCommand(const std::string& command) override;
+
+        void replace(const std::string& s, const std::string& repl, const char x = '%');
 
 #ifdef YARN_SERIALIZATION_JSON
         virtual void save(const std::string& saveFile = "YarnVMSerialized.json");
