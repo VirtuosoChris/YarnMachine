@@ -1,5 +1,5 @@
 # YarnMachine
-(WIP) Standalone C++ virtual machine for Yarn Spinner.
+Standalone C++ virtual machine for Yarn Spinner.
 
 Yarn Spinner is a neat scripting language for branching narrative that is similar to INK and is intuitive because it kind of just resembles a linear screenplay.
 
