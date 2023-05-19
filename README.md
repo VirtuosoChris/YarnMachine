@@ -43,6 +43,10 @@ which can take an arbitrary c++ function and do template magic to generate type 
 see instructions or demo.cpp.  This also uses std::function in the implementation.
 - The VM state is serializable, and uses nlohmann's c++ JSON library as a dependency to do this:
 https://github.com/nlohmann/json
-- Tutorials, examples, and easy dependency fetching / building to come :)
 - the std::regex markup parsing should probably be replaced since std::regex is apparently not maintained and horribly slow.
 It's absolutely fine for now though.
+
+Build Instructions : 
+Meant to be built using cmake;
+all dependencies should automatically build and add to the project;
+protobuf lib takes a bit to build the first time so be patient, but it should automatically fetch as a submodule, and the cmake should automatically run protoc on the yarn.proto file to regenerate up to date headers
