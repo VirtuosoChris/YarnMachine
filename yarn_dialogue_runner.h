@@ -71,15 +71,21 @@ namespace Yarn
         virtual void restore(const std::string& restoreFile = "YarnVMSerialized.json");
 #endif
 
-        void loadModule(const std::string& mod, const std::string& startNode = "Start");
-        void loadModuleLineDB(const std::string& moduleName);
+        /// -- loads yarn module with the module with path & name in 'module' argument, and attempts to transition to node named in 'startNode' argument
+        /// This method will attempt to load the following files:
+        /// <module> + ".yarnc"
+        /// <module> + "-Lines.csv"
+        /// <module> + "-Metadata.csv"
+        /// So we don't load the .yarn script directly, but the output of the ysc.exe compiler, namely the compiled .yarnc,
+        /// as well as the line database and metadata which are stored in csv files
+        void loadModule(const std::string& module, const std::string& startNode = "Start");
 
         void processLine(const std::string_view& line, const Yarn::Markup::LineAttributes& attribs);
 
-        void setAttribCallbacks(); // set built in attrib callbacks
-
     private:
 
+        void setAttribCallbacks(); // set built in attrib callbacks
+        void loadModuleLineDB(const std::string& moduleName);
         static const std::string& findValue(const Yarn::Markup::Attribute& attrib);
     };
 }

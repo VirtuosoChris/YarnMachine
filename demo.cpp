@@ -63,6 +63,16 @@ struct YarnRunnerConsole : public Yarn::YarnRunnerBase
 
     }
 
+    void save()
+    {
+        YarnRunnerBase::save("YarnVMSerialized.json");
+    }
+
+    void restore()
+    {
+        YarnRunnerBase::restore("YarnVMSerialized.json");
+    }
+
     /// - this doesn't have to even be a member.  you could just access the command table member anywhere in your code and change
     /// the bound commands however you like
     void setCommands()
@@ -71,6 +81,10 @@ struct YarnRunnerConsole : public Yarn::YarnRunnerBase
         // stop is already handled by the compiler.
         // so we implement wait.
         // we also implement a beep command that takes a single integer argument for the number of times we beep.
+
+        YarnRunnerConsole& ptr = *this;
+        commands.bindMemberCommand("save", ptr, &YarnRunnerConsole::save, "save the game");
+        commands.bindMemberCommand("restore", ptr, &YarnRunnerConsole::restore, "restore the game");
 
         commands.bindCommand("beep", beep, "usage : beep <count>. Beep beep!");
         commands.bindMemberCommand("wait", vm, &Yarn::YarnVM::setWaitTime, "usage: wait <time>.  current time and time units determined by yarn dialogue runner.");

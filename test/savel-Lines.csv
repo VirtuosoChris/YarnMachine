@@ -1,0 +1,13 @@
+id,text,file,node,lineNumber
+line:C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn-Start-0,"Okay, this is the beginning of the script.",C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn,Start,5
+line:C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn-Start-1,Here's another line that should happen before the save/load.,C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn,Start,6
+line:C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn-Start-2,Now we're going to save in a second.,C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn,Start,7
+line:C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn-Start-3,But first we'll set a variable.,C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn,Start,8
+line:C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn-Start-4,The value should be {0},C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn,Start,10
+line:C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn-Start-5,We're continuing from the save point.,C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn,Start,12
+line:C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn-Start-6,The variable is still {0}.,C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn,Start,13
+line:C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn-Start-7,What would you like to do?,C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn,Start,14
+line:C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn-Start-8,Restore,C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn,Start,15
+line:C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn-Start-9,"OK, restoring",C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn,Start,16
+line:C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn-Start-10,End,C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn,Start,18
+line:C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn-Start-11,"K, done!",C:\Users\chris\GitHub\YarnMachine\test\saveload.yarn,Start,19

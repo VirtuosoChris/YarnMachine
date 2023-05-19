@@ -36,15 +36,16 @@ namespace nlohmann
 
             if (typestr == "float")
             {
-                opt.set_float_value(j.get<float>());
+                float tmp = j["value"].get<float>();
+                opt.set_float_value(tmp);
             }
             else if (typestr == "string")
             {
-                opt.set_string_value(j.get<std::string>());
+                opt.set_string_value(j["value"].get<std::string>());
             }
             else if (typestr == "bool")
             {
-                opt.set_bool_value(j.get<bool>());
+                opt.set_bool_value(j["value"].get<bool>());
             }
             else
             {
@@ -799,15 +800,16 @@ void YarnVM::fromJS(const nlohmann::json& js)
     std::istringstream sstr(generatorStr);
     sstr >> generator;
 
-    variableStorage = js["variables"].get< std::unordered_map<std::string, Yarn::Operand>>();
-    variableStack = js["stack"].get<YarnVM::Stack>();
-    currentOptionsList = js["options"].get<OptionsList>();
 
     time = js["time"].get<long long>();
     waitUntilTime = js["waitUntilTime"].get<long long>();
 
-    this->loadProgram(js["yarncFile"].get<std::string>());
+    this->loadProgram(js["yarncFile"].get<std::string>()); // loading the program sets the initial variables
     this->loadNode(js["currentNode"]);
+
+    variableStorage = js["variables"].get< std::unordered_map<std::string, Yarn::Operand>>();
+    variableStack = js["stack"].get<YarnVM::Stack>();
+    currentOptionsList = js["options"].get<OptionsList>();
 
     instructionPointer = js["instructionPointer"].get<std::size_t>();
     runningState = (RunningState)js["runningState"].get<int>();

@@ -342,12 +342,19 @@ void Yarn::YarnRunnerBase::loadModuleLineDB(const std::string& moduleName)
 }
 
 #ifdef YARN_SERIALIZATION_JSON
+
+namespace Yarn
+{
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Yarn::YarnRunnerBase::Settings, alwaysIgnoreMarkup, nomarkup, emitUnhandledMarkup);
+}
+
 void Yarn::YarnRunnerBase::save(const std::string& saveFile)
 {
     nlohmann::json serialized;
 
     serialized["vm"] = vm.toJS();
     serialized["moduleName"] = moduleName;
+    serialized["settings"] = nlohmann::json(setts);
 
     std::ofstream outJS(saveFile);
 
@@ -365,6 +372,8 @@ void Yarn::YarnRunnerBase::restore(const std::string& restoreFile)
     loadModuleLineDB(js["moduleName"].get<std::string>());
 
     vm.fromJS(js["vm"]);
+
+    setts = js["settings"].get<Yarn::YarnRunnerBase::Settings>();
 
     inJS.close();
 }
