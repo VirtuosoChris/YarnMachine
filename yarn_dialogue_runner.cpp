@@ -179,12 +179,6 @@ void Yarn::YarnRunnerBase::processLine(const std::string_view& line, const Yarn:
             }
         }
 
-        /*
-        if (nextAttrib->name == "nomarkup")
-        {
-            nomarkup = (nextAttrib->type == Yarn::Markup::Attribute::OPEN);
-        }*/
-
         const bool isCloseAll = nextAttrib->type == Yarn::Markup::Attribute::CLOSE_ALL;
 
         // peek for close all attribute and turn off nomarkup

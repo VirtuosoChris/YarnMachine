@@ -6,3 +6,8 @@ test3.yarn
 test2.yarn
 test.yarn
 test_tags.yarn
+repl.yarn
+last.yarn
+dopts.yarn
+testsubs.yarn (tests)
+yest.yarn (test.)
