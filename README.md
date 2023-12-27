@@ -1,6 +1,10 @@
 # YarnMachine
 Standalone C++ virtual machine for Yarn Spinner.
 
+****
+There's been a few updates to Yarn since I last updated this repo.  I plan to update and make sure everything works still / is fully supported, but rn it's on the back burner while I work on other parts of my game / engine.  But if you run into problems feel free to open an issue.  If I know that literally anyone on the planet besides me is using this I'll make updating it a priority :)
+****
+
 Yarn Spinner is a neat scripting language for branching narrative that is similar to INK and is intuitive because it kind of just resembles a linear screenplay.
 
 https://yarnspinner.dev/
