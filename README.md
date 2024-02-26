@@ -1,6 +1,30 @@
 # YarnMachine
 Standalone C++ virtual machine for Yarn Spinner.
 
+****
+Notes:
+
+There's been a few updates to Yarn since I last updated this repo.  I plan to update and make sure everything works still / is fully supported, but rn it's on the back burner while I work on other parts of my game / engine.  But if you run into problems feel free to open an issue.  If I know that literally anyone on the planet besides me is using this I'll make updating it a priority :)
+
+Also note that there may be commands built into the "real" Yarn interpreter for Unity or other platforms that are not supported / have to be added yourself.  This is a generic runtime so any commands that affect UI / audio / visuals are meant to be bring-your-own as custom commands.
+
+****
+
+Build Instructions :
+ 
+Meant to be built using cmake;
+all dependencies should automatically build and add to the project.
+
+If you open the repo using the open in desktop link, it ought to automatically fetch all submodules.  If it doesn't or if you use the command line, you may get errors for protobuf missing a CMakeLists.txt, and find the directory is empty.  In this event, use
+
+git submodule update --init --recursive
+
+When you first build, the protobuf lib takes a bit to build the first time so be patient.
+
+The cmake should also automatically run protoc on the yarn.proto file to regenerate up to date headers
+****
+About:
+
 Yarn Spinner is a neat scripting language for branching narrative that is similar to INK and is intuitive because it kind of just resembles a linear screenplay.
 
 https://yarnspinner.dev/
@@ -46,7 +70,7 @@ https://github.com/nlohmann/json
 - the std::regex markup parsing should probably be replaced since std::regex is apparently not maintained and horribly slow.
 It's absolutely fine for now though.
 
-Build Instructions : 
-Meant to be built using cmake;
-all dependencies should automatically build and add to the project;
-protobuf lib takes a bit to build the first time so be patient, but it should automatically fetch as a submodule, and the cmake should automatically run protoc on the yarn.proto file to regenerate up to date headers
+
+
+
+
