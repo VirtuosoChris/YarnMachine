@@ -4,9 +4,7 @@ Standalone C++ virtual machine for Yarn Spinner.
 ****
 Notes:
 
-There's been a few updates to Yarn since I last updated this repo.  I plan to update and make sure everything works still / is fully supported, but rn it's on the back burner while I work on other parts of my game / engine.  But if you run into problems feel free to open an issue.  If I know that literally anyone on the planet besides me is using this I'll make updating it a priority :)
-
-Also note that there may be commands built into the "real" Yarn interpreter for Unity or other platforms that are not supported / have to be added yourself.  This is a generic runtime so any commands that affect UI / audio / visuals are meant to be bring-your-own as custom commands.
+There may be commands, markup, etc. built into the "real" Yarn interpreter for Unity or other platforms that are not supported / have to be added yourself.  This is a generic runtime so any commands that affect UI / audio / visuals are meant to be bring-your-own as custom commands.
 
 ****
 
