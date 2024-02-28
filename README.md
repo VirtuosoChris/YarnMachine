@@ -6,6 +6,12 @@ Notes:
 
 There may be commands, markup, etc. built into the "real" Yarn interpreter for Unity or other platforms that are not supported / have to be added yourself.  This is a generic runtime so any commands that affect UI / audio / visuals are meant to be bring-your-own as custom commands.
 
+The accompanying terminal sample shows basic usage of the API.
+
+Some prototype code showing how you might make a more advanced dialogue runner with an IMGUI widget for a real time graphical application can be found at my gist here:
+https://gist.github.com/VirtuosoChris/dad8a3e006e6e325964e55507323e41f
+It's 1) prototype code, so not guaranteed to be optimal in any way 2) lifted right out of my game so you won't be able to just build and run this
+but it's provided as an example / proof of concept for how you might do this.
 ****
 
 Build Instructions :
