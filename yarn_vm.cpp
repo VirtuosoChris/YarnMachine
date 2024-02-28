@@ -79,7 +79,7 @@ namespace Yarn
 
 
 /// write all variables, types, and values to an ostream as key:value pairs, one variable per line
-inline std::ostream& Yarn::operator<<(std::ostream& str, const Yarn::Operand& op)
+std::ostream& operator<<(std::ostream& str, const Yarn::Operand& op)
 {
     if (op.has_bool_value())
     {
@@ -768,6 +768,8 @@ bool YarnVM::loadNode(const std::string& node)
     const Yarn::Node* prevNode = currentNode;
     currentNode = &nodeRef;
     instructionPointer = 0;
+
+    runningState = RUNNING;
 
     if (callbacks) callbacks->onChangeNode(prevNode, currentNode);
 

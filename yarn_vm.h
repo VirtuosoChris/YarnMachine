@@ -32,14 +32,14 @@
 
 #define YARN_EXCEPTION(x) if (settings.enableExceptions) { throw YarnException( x ); }
 
+std::ostream& operator<<(std::ostream & str, const Yarn::Operand & op);
+
 namespace Yarn
 {
     class Operand;
     class Node;
     class Instruction;
     class Program;
-
-    inline std::ostream& operator<<(std::ostream& str, const Yarn::Operand& op);
 
 struct YarnVM
 {
