@@ -714,7 +714,10 @@ void YarnVM::setTime(long long timeIn)
     time = timeIn;
 
     // check if sleep time is expired
-    if (runningState == ASLEEP && (time >= waitUntilTime)) { runningState = RUNNING; }
+    if (runningState == ASLEEP && (time >= waitUntilTime))
+    {
+        runningState = RUNNING;
+    }
 }
 
 const Yarn::Instruction& YarnVM::currentInstruction()
