@@ -118,7 +118,7 @@ struct YarnVM
 
     std::size_t instructionPointer = 0;
 
-    RunningState runningState = RUNNING;
+    RunningState runningState = STOPPED;
 
     Settings settings;
 
