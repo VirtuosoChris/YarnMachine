@@ -4,19 +4,44 @@ project(YarnMachine)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_subdirectory(depends)
+# --- Option to choose between add_subdirectory and find_package ---
+option(USE_EXTERNAL_PROTOBUF "Use an external (pre-built/pre-installed) Protobuf library via find_package" OFF)
 
-#set(CMAKE_DEBUG_POSTFIX "d")
-# Prefer installed Protobuf config over legacy FindProtobuf
-set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
+# --- Cache variable for the Protobuf install path (only used if USE_EXTERNAL_PROTOBUF is ON) ---
+set(PROTOBUF_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/depends/protobuf-sdk"
+    CACHE PATH "Installation prefix for external Protobuf library")
 
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/depends/protobuf-sdk/")
+# Proto file path
+set(PROTO_FILE "${CMAKE_CURRENT_SOURCE_DIR}/yarn_spinner.proto")
 
-message(ERROR "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+if(USE_EXTERNAL_PROTOBUF)
+    message(STATUS "Using external Protobuf from: ${PROTOBUF_INSTALL_PREFIX}")
 
-#find_package(protobuf REQUIRED)
-find_package(Protobuf REQUIRED CONFIG)
+    list(APPEND CMAKE_PREFIX_PATH "${PROTOBUF_INSTALL_PREFIX}")
+    set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
+    find_package(Protobuf REQUIRED CONFIG)
 
+    set(PROTOBUF_TARGET protobuf::libprotobuf)
+    set(PROTOBUF_INCLUDE_DIRS ${Protobuf_INCLUDE_DIRS})
+
+    # Use protoc executable from target if available, or fallback to variable
+    if(TARGET protobuf::protoc)
+        set(PROTOC_EXECUTABLE "$<TARGET_FILE:protobuf::protoc>")
+    elseif(DEFINED Protobuf_PROTOC_EXECUTABLE)
+        set(PROTOC_EXECUTABLE "${Protobuf_PROTOC_EXECUTABLE}")
+    else()
+        message(FATAL_ERROR "Could not determine protoc path from external Protobuf.")
+    endif()
+else()
+    message(STATUS "Building Protobuf as a subdirectory dependency")
+    add_subdirectory(depends/protobuf)
+
+    set(PROTOBUF_TARGET libprotobuf)
+    set(PROTOBUF_INCLUDE_DIRS ${protobuf_INCLUDE_DIRS})
+    set(PROTOC_EXECUTABLE "$<TARGET_FILE:protoc>")
+endif()
+
+# --- Rest of your project's CMakeLists.txt ---
 
 add_library(YarnMachineLib
     yarn_vm.h
@@ -30,7 +55,6 @@ add_library(YarnMachineLib
     yarn_dialogue_runner.cpp
 )
 
-# Set properties immediately after target is created
 set_target_properties(YarnMachineLib PROPERTIES
     MAP_IMPORTED_CONFIG_DEBUG Debug
     MAP_IMPORTED_CONFIG_RELEASE Release
@@ -38,13 +62,13 @@ set_target_properties(YarnMachineLib PROPERTIES
 
 target_include_directories(YarnMachineLib
     PUBLIC
-        ${Protobuf_INCLUDE_DIRS}
+        ${PROTOBUF_INCLUDE_DIRS}
         ${CMAKE_CURRENT_SOURCE_DIR}/generated
         ${CMAKE_CURRENT_SOURCE_DIR}/depends
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(YarnMachineLib PUBLIC protobuf::libprotobuf)
+target_link_libraries(YarnMachineLib PUBLIC ${PROTOBUF_TARGET})
 
 option(YARN_SERIALIZATION_JSON "Build with JSON Serialization Functionality?" ON)
 option(BUILD_TEST "Build Test Program" ON)
@@ -56,12 +80,10 @@ endif()
 # Protobuf generation
 set(PROTO_SRC "${CMAKE_CURRENT_SOURCE_DIR}/generated/yarn_spinner.pb.cc")
 set(PROTO_HDR "${CMAKE_CURRENT_SOURCE_DIR}/generated/yarn_spinner.pb.h")
-set(PROTO_FILE "${CMAKE_CURRENT_SOURCE_DIR}/yarn_spinner.proto")
-
-get_target_property(PROTOC_EXECUTABLE protobuf::protoc LOCATION)
 
 add_custom_command(
     OUTPUT ${PROTO_SRC} ${PROTO_HDR}
+    COMMAND ${CMAKE_COMMAND} -E echo "Generating ${PROTO_SRC} and ${PROTO_HDR} using ${PROTOC_EXECUTABLE}"
     COMMAND ${PROTOC_EXECUTABLE} ${PROTO_FILE} --cpp_out=generated --proto_path=${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ${PROTO_FILE}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
