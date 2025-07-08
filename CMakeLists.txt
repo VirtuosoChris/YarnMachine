@@ -6,18 +6,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory(depends)
 
-#set(CMAKE_DEBUG_POSTFIX "d")
-# Prefer installed Protobuf config over legacy FindProtobuf
-set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
-
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/depends/protobuf-sdk/Debug")
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/depends/protobuf-sdk/Release")
-
-message(ERROR "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
-
-#find_package(protobuf REQUIRED)
-find_package(Protobuf REQUIRED CONFIG)
-
 
 add_library(YarnMachineLib
     yarn_vm.h
