@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory(depends)
 
-find_package(Protobuf REQUIRED CONFIG)
 
 add_library(YarnMachineLib
     yarn_vm.h
@@ -48,16 +47,16 @@ set(PROTO_SRC "${CMAKE_CURRENT_SOURCE_DIR}/generated/yarn_spinner.pb.cc")
 set(PROTO_HDR "${CMAKE_CURRENT_SOURCE_DIR}/generated/yarn_spinner.pb.h")
 set(PROTO_FILE "${CMAKE_CURRENT_SOURCE_DIR}/yarn_spinner.proto")
 
-#get_target_property(PROTOC_EXECUTABLE protobuf::protoc LOCATION)
+get_target_property(PROTOC_EXECUTABLE protobuf::protoc LOCATION)
 
-#add_custom_command(
-#    OUTPUT ${PROTO_SRC} ${PROTO_HDR}
-#    COMMAND ${PROTOC_EXECUTABLE} ${PROTO_FILE} --cpp_out=generated --proto_path=${CMAKE_CURRENT_SOURCE_DIR}
-#    DEPENDS ${PROTO_FILE}
-#    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-#    COMMENT "Generating yarn_spinner.pb.cc/.h from .proto"
-#    VERBATIM
-#)
+add_custom_command(
+    OUTPUT ${PROTO_SRC} ${PROTO_HDR}
+    COMMAND ${PROTOC_EXECUTABLE} ${PROTO_FILE} --cpp_out=generated --proto_path=${CMAKE_CURRENT_SOURCE_DIR}
+    DEPENDS ${PROTO_FILE}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Generating yarn_spinner.pb.cc/.h from .proto"
+    VERBATIM
+)
 
 add_custom_target(regenerate_pb DEPENDS ${PROTO_SRC} ${PROTO_HDR})
 add_dependencies(YarnMachineLib regenerate_pb)
