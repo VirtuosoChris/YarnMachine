@@ -4,6 +4,15 @@ Project(YarnMachine)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+include(FetchContent)
+
+FetchContent_Declare(
+  protobuf
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/depends/protobuf
+)
+
+FetchContent_MakeAvailable(protobuf)
+
 add_library(YarnMachineLib
     yarn_vm.h
     yarn_vm.cpp
@@ -23,7 +32,7 @@ target_include_directories(YarnMachineLib PUBLIC ./depends)
 target_include_directories(YarnMachineLib PUBLIC ./generated)
 target_link_libraries(YarnMachineLib PUBLIC libprotobuf)
 
-add_subdirectory(./depends/protobuf)
+# add_subdirectory(./depends/protobuf)
 
 option(YARN_SERIALIZATION_JSON "Build with JSON Serialization Functionality?" True)
 option(BUILD_TEST "Build Test Program" True)
