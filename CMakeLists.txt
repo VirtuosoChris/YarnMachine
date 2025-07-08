@@ -4,11 +4,20 @@ project(YarnMachine)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_subdirectory(depends)
+
+#set(CMAKE_DEBUG_POSTFIX "d")
 # Prefer installed Protobuf config over legacy FindProtobuf
 set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_LIST_DIR}/depends/protobuf-sdk")
 
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/depends/protobuf-sdk/Debug")
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/depends/protobuf-sdk/Release")
+
+message(ERROR "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+
+#find_package(protobuf REQUIRED)
 find_package(Protobuf REQUIRED CONFIG)
+
 
 add_library(YarnMachineLib
     yarn_vm.h
@@ -22,13 +31,18 @@ add_library(YarnMachineLib
     yarn_dialogue_runner.cpp
 )
 
+# Set properties immediately after target is created
+set_target_properties(YarnMachineLib PROPERTIES
+    MAP_IMPORTED_CONFIG_DEBUG Debug
+    MAP_IMPORTED_CONFIG_RELEASE Release
+)
+
 target_include_directories(YarnMachineLib
     PUBLIC
         ${Protobuf_INCLUDE_DIRS}
         ${CMAKE_CURRENT_SOURCE_DIR}/generated
         ${CMAKE_CURRENT_SOURCE_DIR}/depends
-        ${CMAKE_CURRENT_SOURCE_DIR}  # For local headers like yarn_vm.h
-        ${PROTOBUF_SDK}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_link_libraries(YarnMachineLib PUBLIC protobuf::libprotobuf)
