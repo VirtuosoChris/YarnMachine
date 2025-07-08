@@ -1,17 +1,14 @@
 cmake_minimum_required(VERSION 3.18)
-Project(YarnMachine)
+project(YarnMachine)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include(FetchContent)
+# Prefer installed Protobuf config over legacy FindProtobuf
+set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_LIST_DIR}/depends/protobuf-sdk")
 
-FetchContent_Declare(
-  protobuf
-  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/depends/protobuf
-)
-
-FetchContent_MakeAvailable(protobuf)
+find_package(Protobuf REQUIRED CONFIG)
 
 add_library(YarnMachineLib
     yarn_vm.h
@@ -23,58 +20,42 @@ add_library(YarnMachineLib
     yarn_markup.cpp
     yarn_dialogue_runner.h
     yarn_dialogue_runner.cpp
-    # Remove the generated files from here
 )
 
-target_include_directories(YarnMachineLib PUBLIC ./depends/protobuf/src)
-target_include_directories(YarnMachineLib PUBLIC ./)
-target_include_directories(YarnMachineLib PUBLIC ./depends)
-target_include_directories(YarnMachineLib PUBLIC ./generated)
-target_link_libraries(YarnMachineLib PUBLIC libprotobuf)
+target_include_directories(YarnMachineLib
+    PUBLIC
+        ${Protobuf_INCLUDE_DIRS}
+        ${CMAKE_CURRENT_SOURCE_DIR}/generated
+        ${CMAKE_CURRENT_SOURCE_DIR}/depends
+        ${CMAKE_CURRENT_SOURCE_DIR}  # For local headers like yarn_vm.h
+        ${PROTOBUF_SDK}/include
+)
 
-# add_subdirectory(./depends/protobuf)
+target_link_libraries(YarnMachineLib PUBLIC protobuf::libprotobuf)
 
-option(YARN_SERIALIZATION_JSON "Build with JSON Serialization Functionality?" True)
-option(BUILD_TEST "Build Test Program" True)
+option(YARN_SERIALIZATION_JSON "Build with JSON Serialization Functionality?" ON)
+option(BUILD_TEST "Build Test Program" ON)
 
 if(YARN_SERIALIZATION_JSON)
     target_compile_definitions(YarnMachineLib PUBLIC YARN_SERIALIZATION_JSON)
 endif()
 
-if(CMAKE_GENERATOR MATCHES "Visual Studio")
-    #set_property(TARGET YarnMachineLib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
-
-# Specify the output of the protobuf generation
+# Protobuf generation
 set(PROTO_SRC "${CMAKE_CURRENT_SOURCE_DIR}/generated/yarn_spinner.pb.cc")
 set(PROTO_HDR "${CMAKE_CURRENT_SOURCE_DIR}/generated/yarn_spinner.pb.h")
+set(PROTO_FILE "${CMAKE_CURRENT_SOURCE_DIR}/yarn_spinner.proto")
+
+get_target_property(PROTOC_EXECUTABLE protobuf::protoc LOCATION)
 
 add_custom_command(
     OUTPUT ${PROTO_SRC} ${PROTO_HDR}
-    COMMAND protoc yarn_spinner.proto --cpp_out="./generated"
-    DEPENDS yarn_spinner.proto
+    COMMAND ${PROTOC_EXECUTABLE} ${PROTO_FILE} --cpp_out=generated --proto_path=${CMAKE_CURRENT_SOURCE_DIR}
+    DEPENDS ${PROTO_FILE}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Regenerating yarn protobuf files"
+    COMMENT "Generating yarn_spinner.pb.cc/.h from .proto"
+    VERBATIM
 )
 
-
-add_custom_target(
-    regenerate_pb
-    DEPENDS ${PROTO_SRC} ${PROTO_HDR}
-)
-
-
-# Ensure the library waits for the custom command to complete
+add_custom_target(regenerate_pb DEPENDS ${PROTO_SRC} ${PROTO_HDR})
 add_dependencies(YarnMachineLib regenerate_pb)
-
-# Add the generated files to your library
 target_sources(YarnMachineLib PRIVATE ${PROTO_SRC} ${PROTO_HDR})
-
-if(BUILD_TEST)
-    add_executable(YarnTest demo.cpp)
-    target_link_libraries(YarnTest YarnMachineLib)
-
-    if(CMAKE_GENERATOR MATCHES "Visual Studio")
-        set_property(TARGET YarnTest PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
-    endif()
-endif()
