@@ -94,3 +94,12 @@ add_custom_command(
 add_custom_target(regenerate_pb DEPENDS ${PROTO_SRC} ${PROTO_HDR})
 add_dependencies(YarnMachineLib regenerate_pb)
 target_sources(YarnMachineLib PRIVATE ${PROTO_SRC} ${PROTO_HDR})
+
+if(BUILD_TEST)
+    add_executable(YarnTest demo.cpp)
+    target_link_libraries(YarnTest YarnMachineLib)
+
+    if(CMAKE_GENERATOR MATCHES "Visual Studio")
+        set_property(TARGET YarnTest PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+    endif()
+endif()
