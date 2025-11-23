@@ -1,85 +1,86 @@
-#include <yarn_vm.h>
 #include <yarn_spinner.pb.h>
+#include <yarn_vm.h>
 
 #ifdef YARN_SERIALIZATION_JSON
-#include <json.hpp>
 #include <fstream>
+#include <json.hpp>
 
 namespace nlohmann
 {
-    template<>
-    struct adl_serializer<Yarn::Operand>
+template <> struct adl_serializer<Yarn::Operand>
+{
+    static void to_json(json &js, const Yarn::Operand &op)
     {
-        static void to_json(json& js, const Yarn::Operand& op)
+        if (op.has_bool_value())
         {
-            if (op.has_bool_value())
-            {
-                js = { {"value", op.bool_value()}, {"type", "bool"} };
-            }
-
-            else if (op.has_float_value())
-            {
-                js = { {"value", op.float_value()}, {"type", "float"} };
-            }
-
-            else if (op.has_float_value())
-            {
-                js = { {"value", op.string_value()}, {"type", "string"} };
-            }
-
-            else js = { {"value", "UNDEFINED"}, {"type", "UNDEFINED"} };
+            js = {{"value", op.bool_value()}, {"type", "bool"}};
         }
 
-        static void from_json(const json& j, Yarn::Operand& opt)
+        else if (op.has_float_value())
         {
-            const std::string& typestr = j["type"].get<std::string>();
-
-            if (typestr == "float")
-            {
-                float tmp = j["value"].get<float>();
-                opt.set_float_value(tmp);
-            }
-            else if (typestr == "string")
-            {
-                opt.set_string_value(j["value"].get<std::string>());
-            }
-            else if (typestr == "bool")
-            {
-                opt.set_bool_value(j["value"].get<bool>());
-            }
-            else
-            {
-            }
+            js = {{"value", op.float_value()}, {"type", "float"}};
         }
-    };
-}
+
+        else if (op.has_float_value())
+        {
+            js = {{"value", op.string_value()}, {"type", "string"}};
+        }
+
+        else
+            js = {{"value", "UNDEFINED"}, {"type", "UNDEFINED"}};
+    }
+
+    static void from_json(const json &j, Yarn::Operand &opt)
+    {
+        const std::string &typestr = j["type"].get<std::string>();
+
+        if (typestr == "float")
+        {
+            float tmp = j["value"].get<float>();
+            opt.set_float_value(tmp);
+        }
+        else if (typestr == "string")
+        {
+            opt.set_string_value(j["value"].get<std::string>());
+        }
+        else if (typestr == "bool")
+        {
+            opt.set_bool_value(j["value"].get<bool>());
+        }
+        else
+        {
+        }
+    }
+};
+} // namespace nlohmann
 
 namespace Yarn
 {
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Yarn::YarnVM::Settings, randomSeed, enableExceptions);
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Yarn::YarnVM::Line, id, substitutions);
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Yarn::YarnVM::Option, line, destination, enabled);
-}
-
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Yarn::YarnVM::Settings, randomSeed,
+                                   enableExceptions);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Yarn::YarnVM::Line, id, substitutions);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Yarn::YarnVM::Option, line, destination,
+                                   enabled);
+} // namespace Yarn
 
 namespace Yarn
 {
-    inline void to_json(nlohmann::json& j, const Yarn::YarnVM::Stack& p)
-    {
-        j = p.to_json();
-    }
-
-    inline void from_json(const nlohmann::json& j, Yarn::YarnVM::Stack& p)
-    {
-        p.from_json(j);
-    }
+inline void to_json(nlohmann::json &j, const Yarn::YarnVM::Stack &p)
+{
+    j = p.to_json();
 }
+
+inline void from_json(const nlohmann::json &j, Yarn::YarnVM::Stack &p)
+{
+    p.from_json(j);
+}
+} // namespace Yarn
 
 #endif
 
-
-/// write all variables, types, and values to an ostream as key:value pairs, one variable per line
-std::ostream& operator<<(std::ostream& str, const Yarn::Operand& op)
+/// write all variables, types, and values to an ostream as key:value pairs, one
+/// variable per line
+std::ostream &operator<<(std::ostream &str, const Yarn::Operand &op)
 {
     if (op.has_bool_value())
     {
@@ -104,21 +105,15 @@ std::ostream& operator<<(std::ostream& str, const Yarn::Operand& op)
 
 struct StaticContext
 {
-    StaticContext()
-    {
-    }
-    ~StaticContext()
-    {
-        google::protobuf::ShutdownProtobufLibrary();
-    }
+    StaticContext() {}
+    ~StaticContext() { google::protobuf::ShutdownProtobufLibrary(); }
 };
-
 
 using namespace Yarn;
 
-unsigned int YarnVM::visitedCount(const std::string& node)
+unsigned int YarnVM::visitedCount(const std::string &node)
 {
-    const std::string& nodeTrackerVariable = "$Yarn.Internal.Visiting." + node;
+    const std::string &nodeTrackerVariable = "$Yarn.Internal.Visiting." + node;
 
     auto it = this->variableStorage.find(nodeTrackerVariable);
 
@@ -132,7 +127,7 @@ unsigned int YarnVM::visitedCount(const std::string& node)
     return it->second.float_value();
 }
 
-void YarnVM::selectOption(const Option& option)
+void YarnVM::selectOption(const Option &option)
 {
     runningState = RUNNING;
 
@@ -163,62 +158,67 @@ void YarnVM::selectOption(int selection)
     selectOption(currentOptionsList[selection]);
 }
 
-std::string YarnVM::get_string_operand(const Yarn::Instruction& instruction, int index)
+std::string YarnVM::get_string_operand(const Yarn::Instruction &instruction,
+                                       int index)
 {
     if (instruction.operands_size() <= index)
     {
         YARN_EXCEPTION("get_string_operand() : Operand out of bounds");
     }
 
-    const Yarn::Operand& op = instruction.operands(index);
+    const Yarn::Operand &op = instruction.operands(index);
 
     if (!op.has_string_value())
     {
-        YARN_EXCEPTION("get_string_operand() : operand doesn't have a string value");
+        YARN_EXCEPTION(
+            "get_string_operand() : operand doesn't have a string value");
     }
 
     return op.string_value();
 }
 
-bool YarnVM::get_bool_operand(const Yarn::Instruction& instruction, int index)
+bool YarnVM::get_bool_operand(const Yarn::Instruction &instruction, int index)
 {
     if (instruction.operands_size() <= index)
     {
         YARN_EXCEPTION("get_bool_operand() : Operand out of bounds");
     }
 
-    const Yarn::Operand& op = instruction.operands(index);
+    const Yarn::Operand &op = instruction.operands(index);
 
     if (!op.has_bool_value())
     {
-        YARN_EXCEPTION("get_bool_operand() : operand doesn't have a bool value");
+        YARN_EXCEPTION(
+            "get_bool_operand() : operand doesn't have a bool value");
     }
 
     return op.bool_value();
 }
 
-float YarnVM::get_float_operand(const Yarn::Instruction& instruction, int index)
+float YarnVM::get_float_operand(const Yarn::Instruction &instruction, int index)
 {
     if (instruction.operands_size() <= index)
     {
         YARN_EXCEPTION("get_float_operand() : Operand out of bounds");
     }
 
-    const Yarn::Operand& op = instruction.operands(index);
+    const Yarn::Operand &op = instruction.operands(index);
 
     if (!op.has_float_value())
     {
-        YARN_EXCEPTION("get_float_operand() : operand doesn't have a float value");
+        YARN_EXCEPTION(
+            "get_float_operand() : operand doesn't have a float value");
     }
 
     return op.float_value();
 }
 
-const Yarn::Instruction& YarnVM::advance()
+const Yarn::Instruction &YarnVM::advance()
 {
     if (runningState == STOPPED)
     {
-        YARN_EXCEPTION("advance() called for next instruction when program is stopped");
+        YARN_EXCEPTION(
+            "advance() called for next instruction when program is stopped");
     }
 
     if (currentNode)
@@ -229,7 +229,8 @@ const Yarn::Instruction& YarnVM::advance()
         }
         else
         {
-            YARN_EXCEPTION("nextInstruction() called when current node has no more instructions");
+            YARN_EXCEPTION("nextInstruction() called when current node has no "
+                           "more instructions");
         }
     }
     else
@@ -242,7 +243,7 @@ const Yarn::Instruction& YarnVM::advance()
 
 void YarnVM::populateFuncs()
 {
-    functions["Number.Add"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
+    functions["Number.Add"] = [](YarnVM &yarn, int parameters) -> Yarn::Operand
     {
         Yarn::Operand rval;
 
@@ -256,7 +257,8 @@ void YarnVM::populateFuncs()
         return rval;
     };
 
-    functions["Number.Minus"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
+    functions["Number.Minus"] = [](YarnVM &yarn,
+                                   int parameters) -> Yarn::Operand
     {
         Yarn::Operand rval;
 
@@ -270,7 +272,8 @@ void YarnVM::populateFuncs()
         return rval;
     };
 
-    functions["Number.Multiply"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
+    functions["Number.Multiply"] = [](YarnVM &yarn,
+                                      int parameters) -> Yarn::Operand
     {
         Yarn::Operand rval;
 
@@ -284,7 +287,8 @@ void YarnVM::populateFuncs()
         return rval;
     };
 
-    functions["Number.Divide"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
+    functions["Number.Divide"] = [](YarnVM &yarn,
+                                    int parameters) -> Yarn::Operand
     {
         Yarn::Operand rval;
 
@@ -298,7 +302,8 @@ void YarnVM::populateFuncs()
         return rval;
     };
 
-    functions["Number.Modulo"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
+    functions["Number.Modulo"] = [](YarnVM &yarn,
+                                    int parameters) -> Yarn::Operand
     {
         Yarn::Operand rval;
 
@@ -312,7 +317,8 @@ void YarnVM::populateFuncs()
         return rval;
     };
 
-    functions["Number.LessThan"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
+    functions["Number.LessThan"] = [](YarnVM &yarn,
+                                      int parameters) -> Yarn::Operand
     {
         Yarn::Operand rval;
 
@@ -326,7 +332,8 @@ void YarnVM::populateFuncs()
         return rval;
     };
 
-    functions["Number.EqualTo"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
+    functions["Number.EqualTo"] = [](YarnVM &yarn,
+                                     int parameters) -> Yarn::Operand
     {
         Yarn::Operand rval;
 
@@ -340,7 +347,8 @@ void YarnVM::populateFuncs()
         return rval;
     };
 
-    functions["Number.GreaterThan"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
+    functions["Number.GreaterThan"] = [](YarnVM &yarn,
+                                         int parameters) -> Yarn::Operand
     {
         Yarn::Operand rval;
 
@@ -354,7 +362,8 @@ void YarnVM::populateFuncs()
         return rval;
     };
 
-    functions["Number.GreaterThanOrEqualTo"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
+    functions["Number.GreaterThanOrEqualTo"] =
+        [](YarnVM &yarn, int parameters) -> Yarn::Operand
     {
         Yarn::Operand rval;
 
@@ -368,7 +377,8 @@ void YarnVM::populateFuncs()
         return rval;
     };
 
-    functions["Number.LessThanOrEqualTo"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
+    functions["Number.LessThanOrEqualTo"] = [](YarnVM &yarn,
+                                               int parameters) -> Yarn::Operand
     {
         Yarn::Operand rval;
 
@@ -382,7 +392,7 @@ void YarnVM::populateFuncs()
         return rval;
     };
 
-    functions["Bool.And"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
+    functions["Bool.And"] = [](YarnVM &yarn, int parameters) -> Yarn::Operand
     {
         Yarn::Operand rval;
 
@@ -396,7 +406,7 @@ void YarnVM::populateFuncs()
         return rval;
     };
 
-    functions["Bool.Or"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
+    functions["Bool.Or"] = [](YarnVM &yarn, int parameters) -> Yarn::Operand
     {
         Yarn::Operand rval;
 
@@ -410,7 +420,7 @@ void YarnVM::populateFuncs()
         return rval;
     };
 
-    functions["Bool.Xor"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
+    functions["Bool.Xor"] = [](YarnVM &yarn, int parameters) -> Yarn::Operand
     {
         Yarn::Operand rval;
 
@@ -424,7 +434,7 @@ void YarnVM::populateFuncs()
         return rval;
     };
 
-    functions["Bool.Not"] = [](YarnVM& yarn, int parameters)->Yarn::Operand
+    functions["Bool.Not"] = [](YarnVM &yarn, int parameters) -> Yarn::Operand
     {
         Yarn::Operand rval;
 
@@ -438,8 +448,10 @@ void YarnVM::populateFuncs()
 
     /*
     visited(string node_name)
-    visited returns a boolean value of true if the node with the title of node_name has been entered and exited at least once before, otherwise returns false.
-    Will return false if node_name doesn't match a node in project.
+    visited returns a boolean value of true if the node with the title of
+    node_name has been entered and exited at least once before, otherwise
+    returns false. Will return false if node_name doesn't match a node in
+    project.
     */
     YARN_FUNC("visited")
     {
@@ -459,8 +471,9 @@ void YarnVM::populateFuncs()
 
     /*
     visited_count(string node_name)
-    visted_count returns a number value of the number of times the node with the title of node_name has been entered and exited, otherwise returns 0.
-    Will return 0 if node_name doesn't match a node in project.
+    visted_count returns a number value of the number of times the node with the
+    title of node_name has been entered and exited, otherwise returns 0. Will
+    return 0 if node_name doesn't match a node in project.
     */
     YARN_FUNC("visited_count")
     {
@@ -523,7 +536,8 @@ void YarnVM::populateFuncs()
     /*
     dice(number sides)
     dice returns a random integer between 1 and sides, inclusive.
-    For example, dice(6) returns a number between 1 and 6, just like rolling a six-sided die.
+    For example, dice(6) returns a number between 1 and 6, just like rolling a
+    six-sided die.
     */
     YARN_FUNC("dice")
     {
@@ -632,7 +646,8 @@ void YarnVM::populateFuncs()
 
     /*
     inc(number n)
-    inc rounds n up to the nearest integer. If n is already an integer, inc returns n+1.
+    inc rounds n up to the nearest integer. If n is already an integer, inc
+    returns n+1.
     */
     YARN_FUNC("inc")
     {
@@ -652,7 +667,8 @@ void YarnVM::populateFuncs()
 
     /*
     dec(number n)
-    inc rounds n down to the nearest integer. If n is already an integer, inc returns n-1.
+    inc rounds n down to the nearest integer. If n is already an integer, inc
+    returns n-1.
     */
     YARN_FUNC("dec")
     {
@@ -672,7 +688,8 @@ void YarnVM::populateFuncs()
 
     /*
     decimal(number n)
-    decimal returns the decimal portion of n. This will always be a number between 0 and 1. For example, decimal(4.51) will return 0.51.
+    decimal returns the decimal portion of n. This will always be a number
+    between 0 and 1. For example, decimal(4.51) will return 0.51.
     */
     YARN_FUNC("decimal")
     {
@@ -706,7 +723,6 @@ void YarnVM::populateFuncs()
 
         return rval;
     };
-
 }
 
 void YarnVM::setTime(long long timeIn)
@@ -720,7 +736,7 @@ void YarnVM::setTime(long long timeIn)
     }
 }
 
-const Yarn::Instruction& YarnVM::currentInstruction()
+const Yarn::Instruction &YarnVM::currentInstruction()
 {
     assert(currentNode);
     auto instructionCtNode = currentNode->instructions_size();
@@ -738,17 +754,15 @@ void YarnVM::setInstruction(std::int32_t instruction)
 
     if (instruction >= currentNode->instructions_size())
     {
-        YARN_EXCEPTION("Invalid instruction pointer parameter for setInstruction()");
+        YARN_EXCEPTION(
+            "Invalid instruction pointer parameter for setInstruction()");
     }
 
     instructionPointer = instruction;
 }
 
-
-YarnVM::YarnVM(const YarnVM::Settings& setts)
-    :
-    settings(setts),
-    generator(setts.randomSeed)
+YarnVM::YarnVM(const YarnVM::Settings &setts)
+    : settings(setts), generator(setts.randomSeed)
 {
     static StaticContext sc;
 
@@ -757,7 +771,7 @@ YarnVM::YarnVM(const YarnVM::Settings& setts)
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 }
 
-bool YarnVM::loadNode(const std::string& node)
+bool YarnVM::loadNode(const std::string &node)
 {
     // node not found check
     if (program.nodes().find(node) == program.nodes().end())
@@ -766,53 +780,56 @@ bool YarnVM::loadNode(const std::string& node)
         return false;
     }
 
-    const Yarn::Node& nodeRef = program.nodes().at(node);
+    const Yarn::Node &nodeRef = program.nodes().at(node);
 
-    const Yarn::Node* prevNode = currentNode;
+    const Yarn::Node *prevNode = currentNode;
     currentNode = &nodeRef;
     instructionPointer = 0;
 
     runningState = RUNNING;
 
-    if (callbacks) callbacks->onChangeNode(prevNode, currentNode);
+    if (callbacks)
+        callbacks->onChangeNode(prevNode, currentNode);
 
     return true;
 }
 
-
-bool YarnVM::loadProgram(const std::string& yarncFileIn)
+bool YarnVM::loadProgram(const std::string &yarncFileIn)
 {
     yarncFile = yarncFileIn;
-   
+
     std::ifstream is(yarncFile, std::ios::binary | std::ios::in);
 
     assert(is.is_open());
 
     bool parsed = program.ParseFromIstream(&is);
 
-    this->variableStorage = std::unordered_map<std::string, Yarn::Operand>(program.initial_values().begin(), program.initial_values().end());
+    this->variableStorage = std::unordered_map<std::string, Yarn::Operand>(
+        program.initial_values().begin(), program.initial_values().end());
 
     return parsed;
 }
 
 #ifdef YARN_SERIALIZATION_JSON
 
-void YarnVM::fromJS(const nlohmann::json& js)
+void YarnVM::fromJS(const nlohmann::json &js)
 {
     settings = js["settings"].get<YarnVM::Settings>();
 
-    const std::string& generatorStr = js["generator"].get<std::string>();
+    const std::string &generatorStr = js["generator"].get<std::string>();
     std::istringstream sstr(generatorStr);
     sstr >> generator;
-
 
     time = js["time"].get<long long>();
     waitUntilTime = js["waitUntilTime"].get<long long>();
 
-    this->loadProgram(js["yarncFile"].get<std::string>()); // loading the program sets the initial variables
+    this->loadProgram(
+        js["yarncFile"].get<std::string>()); // loading the program sets the
+                                             // initial variables
     this->loadNode(js["currentNode"]);
 
-    variableStorage = js["variables"].get< std::unordered_map<std::string, Yarn::Operand>>();
+    variableStorage =
+        js["variables"].get<std::unordered_map<std::string, Yarn::Operand>>();
     variableStack = js["stack"].get<YarnVM::Stack>();
     currentOptionsList = js["options"].get<OptionsList>();
 
@@ -821,7 +838,8 @@ void YarnVM::fromJS(const nlohmann::json& js)
 
     if (this->runningState == AWAITING_INPUT)
     {
-        if (callbacks) callbacks->onPresentOptions(this->currentOptionsList);
+        if (callbacks)
+            callbacks->onPresentOptions(this->currentOptionsList);
     }
 }
 
@@ -854,10 +872,13 @@ nlohmann::json YarnVM::toJS() const
         rval["options"] = nlohmann::json(currentOptionsList);
     }
 
-    { // serialize the program state 
+    { // serialize the program state
         assert(currentNode != nullptr && currentNode->name().length());
 
-        if (currentNode != nullptr) { rval["currentNode"] = currentNode->name(); }
+        if (currentNode != nullptr)
+        {
+            rval["currentNode"] = currentNode->name();
+        }
 
         rval["instructionPointer"] = instructionPointer;
 
@@ -876,12 +897,11 @@ nlohmann::json YarnVM::toJS() const
 
 nlohmann::json Yarn::YarnVM::Stack::to_json() const
 {
-    return nlohmann::json(this->_Get_container());
+    return nlohmann::json(this->c);
 }
 
-void Yarn::YarnVM::Stack::from_json(const nlohmann::json& js)
+void Yarn::YarnVM::Stack::from_json(const nlohmann::json &js)
 {
     this->c = js.get<YarnVM::Stack::container_type>();
 }
 #endif
-
