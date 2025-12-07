@@ -1,9 +1,9 @@
-#include <yarn_vm.h>
 #include <yarn_spinner.pb.h>
+#include <yarn_vm.h>
 
 #ifdef YARN_SERIALIZATION_JSON
-#include <json.hpp>
 #include <fstream>
+#include <json.hpp>
 
 namespace nlohmann
 {
@@ -104,15 +104,9 @@ std::ostream& operator<<(std::ostream& str, const Yarn::Operand& op)
 
 struct StaticContext
 {
-    StaticContext()
-    {
-    }
-    ~StaticContext()
-    {
-        google::protobuf::ShutdownProtobufLibrary();
-    }
+    StaticContext() {}
+    ~StaticContext() { google::protobuf::ShutdownProtobufLibrary(); }
 };
-
 
 using namespace Yarn;
 
@@ -706,7 +700,6 @@ void YarnVM::populateFuncs()
 
         return rval;
     };
-
 }
 
 void YarnVM::setTime(long long timeIn)
@@ -783,7 +776,7 @@ bool YarnVM::loadNode(const std::string& node)
 bool YarnVM::loadProgram(const std::string& yarncFileIn)
 {
     yarncFile = yarncFileIn;
-   
+
     std::ifstream is(yarncFile, std::ios::binary | std::ios::in);
 
     assert(is.is_open());
@@ -804,7 +797,6 @@ void YarnVM::fromJS(const nlohmann::json& js)
     const std::string& generatorStr = js["generator"].get<std::string>();
     std::istringstream sstr(generatorStr);
     sstr >> generator;
-
 
     time = js["time"].get<long long>();
     waitUntilTime = js["waitUntilTime"].get<long long>();
@@ -876,7 +868,7 @@ nlohmann::json YarnVM::toJS() const
 
 nlohmann::json Yarn::YarnVM::Stack::to_json() const
 {
-    return nlohmann::json(this->_Get_container());
+    return nlohmann::json(this->c);
 }
 
 void Yarn::YarnVM::Stack::from_json(const nlohmann::json& js)

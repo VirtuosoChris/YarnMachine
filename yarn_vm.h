@@ -18,9 +18,9 @@
  */
 
 #include <functional>
-#include <stack>
 #include <iostream>
 #include <random>
+#include <stack>
 
 #include <yarn_spinner.pb.h>
 
@@ -180,8 +180,7 @@ struct YarnVM
 
 #endif
 
-protected: // internal helper methods
-
+  protected: // internal helper methods
     void populateFuncs();
 
     std::string get_string_operand(const Yarn::Instruction& instruction, int index);
@@ -190,4 +189,4 @@ protected: // internal helper methods
 
     float get_float_operand(const Yarn::Instruction& instruction, int index);
 };
-}
+} // namespace Yarn
