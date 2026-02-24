@@ -312,5 +312,5 @@ void YarnVM::processInstruction(const Yarn::Instruction& instruction)
     }
     };
 
-    advance();
+    if (runningState != STOPPED) { advance(); }
 }
