@@ -2,6 +2,8 @@
 
 #include <csv.hpp>
 
+#include <chrono>
+
 void Yarn::LineDatabase::loadMetadata(const std::string_view& csvFile)
 {
     const int YARN_TAGS_COLUMN_INDEX = 3;
